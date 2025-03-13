@@ -78,6 +78,20 @@ export class EnrollmentsController {
     return this.enrollmentsService.findByTournament(tournamentId);
   }
 
+  @Get('standings/:tournamentId')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOkResponse({ type: EnrollmentEntity, isArray: true })
+  async getTournamentStandings(
+    @Param('tournamentId', ParseIntPipe) tournamentId: number,
+  ) {
+    try {
+      return await this.enrollmentsService.getTournamentStandings(tournamentId);
+    } catch (error) {
+      return null;
+    }
+  }
+
   @Patch(':id')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -85,7 +99,7 @@ export class EnrollmentsController {
   @ApiOkResponse({ type: EnrollmentEntity })
   update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() updateEnrollmentDto: UpdateEnrollmentDto
+    @Body() updateEnrollmentDto: UpdateEnrollmentDto,
   ) {
     return this.enrollmentsService.update(id, updateEnrollmentDto);
   }
