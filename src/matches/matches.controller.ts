@@ -54,14 +54,14 @@ export class MatchesController {
   @Get('current/:tournamentId')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  @ApiOkResponse({ type: MatchEntity, isArray: true })
-  findForDraft(
+  @ApiOkResponse({ type: MatchEntity })
+  findCurrentForTournament(
     @Req() req: Request,
-    @Param('tournamentId', ParseIntPipe) tournamentId: number
+    @Param('tournamentId', ParseIntPipe) tournamentId: number,
   ) {
     return this.matchesService.findCurrentForTournament(
       tournamentId,
-      req.user['id']
+      req.user['id'],
     );
   }
 
@@ -98,7 +98,7 @@ export class MatchesController {
   reportResult(
     @Req() req: Request,
     @Param('id', ParseIntPipe) id: number,
-    @Body() updateMatchDto: UpdateMatchDto
+    @Body() updateMatchDto: UpdateMatchDto,
   ) {
     return this.matchesService.reportResult(req.user['id'], id, updateMatchDto);
   }
@@ -110,12 +110,12 @@ export class MatchesController {
   confirmResult(
     @Req() req: Request,
     @Param('id', ParseIntPipe) id: number,
-    @Body() updateMatchDto: UpdateMatchDto
+    @Body() updateMatchDto: UpdateMatchDto,
   ) {
     return this.matchesService.confirmResult(
       req.user['id'],
       id,
-      updateMatchDto
+      updateMatchDto,
     );
   }
 
@@ -126,7 +126,7 @@ export class MatchesController {
   @ApiOkResponse({ type: MatchEntity })
   update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() updateMatchDto: UpdateMatchDto
+    @Body() updateMatchDto: UpdateMatchDto,
   ) {
     return this.matchesService.update(id, updateMatchDto);
   }

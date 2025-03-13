@@ -28,7 +28,7 @@ interface PlayerScore {
 export class MatchesService {
   constructor(
     private prisma: PrismaService,
-    private readonly matchGateway: MatchGateway
+    private readonly matchGateway: MatchGateway,
   ) {}
 
   create(createMatchDto: CreateMatchDto) {
@@ -68,7 +68,7 @@ export class MatchesService {
   }
 
   async findCurrentForTournament(tournamentId: number, userId: number) {
-    const game = await this.prisma.match.findFirst({
+    const game = await this.prisma.match.findFirstOrThrow({
       where: {
         round: {
           started: true,
@@ -119,6 +119,12 @@ export class MatchesService {
         },
       },
     });
+    if (!game) {
+      return {
+        ...game,
+        opponentName: '',
+      };
+    }
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     const p1Name = game.player1.enrollment.user.username;
     const p2Name = game.player2.enrollment.user.username;
@@ -154,7 +160,7 @@ export class MatchesService {
   async reportResult(
     userId: number,
     matchId: number,
-    updateMatchDto: UpdateMatchDto
+    updateMatchDto: UpdateMatchDto,
   ) {
     // Destructure the updateMatchDto and check if the reporting user
     // is authorized to change this match
@@ -170,7 +176,7 @@ export class MatchesService {
       userId != g.player2.enrollment.userId
     ) {
       console.error(
-        `User with ID ${userId} tried to update match, but players have IDs ${g.player1.enrollment.userId} and ${g.player2.enrollment.userId}`
+        `User with ID ${userId} tried to update match, but players have IDs ${g.player1.enrollment.userId} and ${g.player2.enrollment.userId}`,
       );
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
@@ -179,7 +185,7 @@ export class MatchesService {
       // an admin to be authorized to update the match
       if (!user.roles.includes(Role.ADMIN)) {
         throw new ForbiddenException(
-          'User is not authorized to update this match'
+          'User is not authorized to update this match',
         );
       } else {
         // If the user is an admin, the result is automatically confirmed as well
@@ -202,7 +208,7 @@ export class MatchesService {
   async confirmResult(
     userId: number,
     matchId: number,
-    _updateMatchDto: UpdateMatchDto
+    _updateMatchDto: UpdateMatchDto,
   ) {
     // Destructure the updateMatchDto and check if the reporting user
     // is authorized to change this match
@@ -233,7 +239,7 @@ export class MatchesService {
       });
       if (!user.roles.includes(Role.ADMIN)) {
         throw new ForbiddenException(
-          'User is not authorized to update this match'
+          'User is not authorized to update this match',
         );
       }
     }
@@ -410,30 +416,30 @@ export class MatchesService {
       for (const playerId in pairings) {
         if (
           pointLists[points].some(
-            (player: PlayerScore) => player.playerId === playerId
+            (player: PlayerScore) => player.playerId === playerId,
           )
         ) {
           const playerIdx = pointLists[points].findIndex(
-            (idx: PlayerScore) => idx.playerId === playerId
+            (idx: PlayerScore) => idx.playerId === playerId,
           );
           pointLists[points][playerIdx].pairings.add(pairings[playerId]);
           matches.push(
             await this.pair(
               currentRound.id,
               pointLists[points].find(
-                (player: PlayerScore) => player.playerId === playerId
+                (player: PlayerScore) => player.playerId === playerId,
               )!,
               pointLists[points].find(
-                (player: PlayerScore) => player.playerId === pairings[playerId]
+                (player: PlayerScore) => player.playerId === pairings[playerId],
               )!,
-              openTable
-            )
+              openTable,
+            ),
           );
           openTable += 1;
           pointLists[points] = pointLists[points].filter(
             (player: PlayerScore) =>
               player.playerId !== playerId &&
-              player.playerId !== pairings[playerId]
+              player.playerId !== pairings[playerId],
           );
         }
       }
@@ -597,7 +603,7 @@ export class MatchesService {
 
     // Handle unpaired players if necessary
     const unpairedPlayers = nodes.filter(
-      (player) => !pairedPlayers.has(player)
+      (player) => !pairedPlayers.has(player),
     );
     if (unpairedPlayers.length > 0) {
       // Implement logic to pair remaining unpaired players if needed
@@ -616,7 +622,7 @@ export class MatchesService {
     roundId: number,
     player1: PlayerScore,
     player2: PlayerScore,
-    tableNumber: number
+    tableNumber: number,
   ) {
     const data: CreateMatchDto = {
       roundId,
