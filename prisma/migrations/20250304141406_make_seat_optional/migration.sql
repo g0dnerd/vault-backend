@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "DraftPlayer" ALTER COLUMN "seat" DROP NOT NULL,
+ALTER COLUMN "seat" DROP DEFAULT;

@@ -1,0 +1,167 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Tournament {
+  id             Int          @id @default(autoincrement())
+  name           String       @unique
+  public         Boolean      @default(false)
+  playerCapacity Int?
+  description    String?
+  enrollments    Enrollment[]
+  phases         Phase[]
+  isLeague       Boolean      @default(false)
+}
+
+model User {
+  id             Int          @id @default(autoincrement())
+  roles          Role[]       @default([PLAYER])
+  username       String       @unique
+  email          String       @unique
+  createdAt      DateTime     @default(now())
+  password       String
+  profilePicture String?
+  updatedAt      DateTime     @default(now()) @updatedAt
+  enrollments    Enrollment[]
+  cubes          Cube[]
+}
+
+model Enrollment {
+  id               Int           @id @default(autoincrement())
+  userId           Int           @map("playerId")
+  user             User          @relation(fields: [userId], references: [id])
+  tournamentId     Int
+  tournament       Tournament    @relation(fields: [tournamentId], references: [id])
+  enrolledOn       DateTime      @default(now())
+  draftEnrollments DraftPlayer[]
+  elo              Int?
+
+  @@unique(fields: [userId, tournamentId], name: "playerTournament")
+}
+
+model DraftPlayer {
+  id              Int        @id @default(autoincrement())
+  draft           Draft      @relation(fields: [draftId], references: [id])
+  draftId         Int
+  enrollment      Enrollment @relation(fields: [enrollmentId], references: [id])
+  enrollmentId    Int
+  player1Matches  Match[]    @relation("player1")
+  player2Matches  Match[]    @relation("player2")
+  reportedResults Match[]
+  checkedIn       Boolean    @default(false)
+  checkedOut      Boolean    @default(false)
+  dropped         Boolean    @default(false)
+  seat            Int?
+  bye             Boolean    @default(false)
+  hadBye          Boolean    @default(false)
+  Image           Image[]
+
+  @@unique(fields: [draftId, enrollmentId], name: "draftEnrollment")
+}
+
+model Match {
+  id              Int          @id @default(autoincrement())
+  round           Round        @relation(fields: [roundId], references: [id])
+  roundId         Int
+  player1         DraftPlayer  @relation("player1", fields: [player1Id], references: [id])
+  player1Id       Int
+  player2         DraftPlayer  @relation("player2", fields: [player2Id], references: [id])
+  player2Id       Int
+  tableNumber     Int
+  player1Wins     Int?
+  player2Wins     Int?
+  reportedBy      DraftPlayer? @relation(fields: [reportedById], references: [id])
+  reportedById    Int?
+  resultConfirmed Boolean?
+
+  @@unique(fields: [roundId, player1Id, player2Id], name: "roundPairing")
+}
+
+model Phase {
+  id           Int        @id @default(autoincrement())
+  tournament   Tournament @relation(fields: [tournamentId], references: [id])
+  tournamentId Int
+  phaseIndex   Int
+  roundAmount  Int        @default(3)
+  started      Boolean    @default(false)
+  finished     Boolean    @default(false)
+  drafts       Draft[]
+
+  @@unique(fields: [tournamentId, phaseIndex], name: "tournamentPhase")
+}
+
+model Cube {
+  id              Int     @id @default(autoincrement())
+  creator         User?   @relation(fields: [creatorId], references: [id])
+  creatorId       Int?
+  name            String  @unique
+  cardNumber      Int
+  description     String?
+  longDescription String?
+  imageUrl        String?
+  url             String  @unique
+  drafts          Draft[]
+}
+
+model Draft {
+  id         Int           @id @default(autoincrement())
+  phase      Phase         @relation(fields: [phaseId], references: [id])
+  phaseId    Int
+  cube       Cube          @relation(fields: [cubeId], references: [id])
+  cubeId     Int
+  tableFirst Int?          @default(0)
+  tableLast  Int?          @default(0)
+  started    Boolean       @default(false)
+  finished   Boolean       @default(false)
+  seated     Boolean       @default(false)
+  rounds     Round[]
+  players    DraftPlayer[]
+
+  @@unique(fields: [phaseId, cubeId], name: "phaseCube")
+}
+
+model Round {
+  id         Int     @id @default(autoincrement())
+  draft      Draft   @relation(fields: [draftId], references: [id])
+  draftId    Int
+  roundIndex Int
+  paired     Boolean @default(false)
+  started    Boolean @default(false)
+  finished   Boolean @default(false)
+  matches    Match[]
+
+  @@unique(fields: [draftId, roundIndex], name: "draftRound")
+}
+
+model Session {
+  id        String   @id
+  sid       String   @unique
+  data      String
+  expiresAt DateTime
+}
+
+model Image {
+  id            Int         @id @default(autoincrement())
+  draftPlayer   DraftPlayer @relation(fields: [draftPlayerId], references: [id])
+  draftPlayerId Int
+  url           String      @unique
+  imageType     ImageType
+  timestamp     DateTime    @default(now())
+}
+
+enum ImageType {
+  CHECKIN
+  CHECKOUT
+}
+
+enum Role {
+  ADMIN
+  PLAYER
+  PLAYER_ADMIN
+}
