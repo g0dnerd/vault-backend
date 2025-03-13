@@ -68,7 +68,7 @@ export class MatchesService {
   }
 
   async findCurrentForTournament(tournamentId: number, userId: number) {
-    const game = await this.prisma.match.findFirstOrThrow({
+    const game = await this.prisma.match.findFirst({
       where: {
         round: {
           started: true,
