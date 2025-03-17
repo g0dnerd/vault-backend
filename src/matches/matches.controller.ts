@@ -45,7 +45,7 @@ export class MatchesController {
   @Get('ongoing/:draftId')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(['ADMIN'])
+  @Roles(['ADMIN', 'PLAYER_ADMIN'])
   @ApiOkResponse({ type: MatchEntity, isArray: true })
   findAll(@Param('draftId', ParseIntPipe) draftId: number) {
     return this.matchesService.findOngoing(draftId);

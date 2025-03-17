@@ -30,6 +30,13 @@ export class DraftsService {
         cube: {
           select: {
             name: true,
+            id: true,
+          },
+        },
+        phase: {
+          select: {
+            tournamentId: true,
+            roundAmount: true,
           },
         },
       },

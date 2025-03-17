@@ -56,6 +56,16 @@ export class EnrollmentsController {
     return this.enrollmentsService.findAllLeagueEnrollments();
   }
 
+  @Post('enroll-many')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiCreatedResponse({ type: EnrollmentEntity, isArray: true })
+  enrollMany(
+    @Body() createEnrollmentDto: { tournamentId: number; userIds: number[] },
+  ) {
+    return this.enrollmentsService.enrollMany(createEnrollmentDto);
+  }
+
   @Get(':id')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -76,6 +86,15 @@ export class EnrollmentsController {
   @ApiOkResponse({ type: EnrollmentEntity, isArray: true })
   findForTournament(@Param('tournamentId', ParseIntPipe) tournamentId: number) {
     return this.enrollmentsService.findByTournament(tournamentId);
+  }
+
+  @Get('draft/:draftId')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(['ADMIN', 'PLAYER_ADMIN'])
+  @ApiOkResponse({ type: EnrollmentEntity, isArray: true })
+  findForDraft(@Param('draftId', ParseIntPipe) draftId: number) {
+    return this.enrollmentsService.findByDraft(draftId);
   }
 
   @Get('standings/:tournamentId')
@@ -116,8 +135,8 @@ export class EnrollmentsController {
   @Get('enroll/:id')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  @ApiOkResponse({ type: EnrollmentEntity })
-  register(@Req() req: Request, @Param('id', ParseIntPipe) id: number) {
+  @ApiCreatedResponse({ type: EnrollmentEntity })
+  enroll(@Req() req: Request, @Param('id', ParseIntPipe) id: number) {
     return this.enrollmentsService.enroll(req.user['id'], id);
   }
 }

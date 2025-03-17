@@ -48,7 +48,7 @@ export class DraftsController {
   @ApiOkResponse({ type: DraftEntity })
   async getCurrentDraft(
     @Req() req: Request,
-    @Param('tournamentId', ParseIntPipe) tournamentId: number
+    @Param('tournamentId', ParseIntPipe) tournamentId: number,
   ) {
     const currentDraft = await this.draftsService
       .getCurrentDraft(req.user['id'], tournamentId)
@@ -63,7 +63,7 @@ export class DraftsController {
   @UseGuards(JwtAuthGuard)
   @ApiOkResponse({ type: DraftEntity, isArray: true })
   getOngoingDraftsForTournament(
-    @Param('tournamentId', ParseIntPipe) tournamentId: number
+    @Param('tournamentId', ParseIntPipe) tournamentId: number,
   ) {
     return this.draftsService.getOngoingDraftsForTournament(tournamentId);
   }
@@ -71,7 +71,7 @@ export class DraftsController {
   @Get(':id')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(['ADMIN'])
+  @Roles(['ADMIN', 'PLAYER_ADMIN'])
   @ApiOkResponse({ type: DraftEntity })
   async findOne(@Param('id', ParseIntPipe) id: number) {
     const draft = await this.draftsService.findOne(id);
@@ -88,7 +88,7 @@ export class DraftsController {
   @ApiOkResponse({ type: DraftEntity })
   update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() updateDraftDto: UpdateDraftDto
+    @Body() updateDraftDto: UpdateDraftDto,
   ) {
     return this.draftsService.update(id, updateDraftDto);
   }

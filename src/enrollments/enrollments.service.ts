@@ -47,6 +47,19 @@ export class EnrollmentsService {
     return this.create(createEnrollmentDto);
   }
 
+  enrollMany(createEnrollmentDto: { tournamentId: number; userIds: number[] }) {
+    const { tournamentId, userIds } = createEnrollmentDto;
+    const enrollments: CreateEnrollmentDto[] = userIds.map((userId) => ({
+      tournamentId,
+      userId,
+    }));
+
+    return this.prisma.enrollment.createManyAndReturn({
+      data: enrollments,
+      skipDuplicates: true,
+    });
+  }
+
   findAll() {
     return this.prisma.enrollment.findMany();
   }
@@ -74,7 +87,28 @@ export class EnrollmentsService {
   findByTournament(tournamentId: number) {
     return this.prisma.enrollment.findMany({
       where: { tournamentId },
-      include: {
+      select: {
+        id: true,
+        user: {
+          select: {
+            username: true,
+          },
+        },
+      },
+    });
+  }
+
+  findByDraft(draftId: number) {
+    return this.prisma.enrollment.findMany({
+      where: {
+        draftEnrollments: {
+          some: {
+            draftId,
+          },
+        },
+      },
+      select: {
+        id: true,
         user: {
           select: {
             username: true,

@@ -12,7 +12,7 @@ export class UsersService {
   async create(createUserDto: CreateUserDto) {
     const hashedPassword = await bcrypt.hash(
       createUserDto.password,
-      roundsOfHashing
+      roundsOfHashing,
     );
 
     createUserDto.password = hashedPassword;
@@ -55,10 +55,26 @@ export class UsersService {
     return user.roles;
   }
 
-  async getProfile(userId: number) {
+  getProfile(userId: number) {
     return this.prisma.user.findUnique({
       where: { id: userId },
       select: { username: true, email: true, profilePicture: true },
+    });
+  }
+
+  getAvailableForTournament(tournamentId: number) {
+    return this.prisma.user.findMany({
+      where: {
+        enrollments: {
+          none: {
+            tournamentId,
+          },
+        },
+      },
+      select: {
+        username: true,
+        id: true,
+      },
     });
   }
 }

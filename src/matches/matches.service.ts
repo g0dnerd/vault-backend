@@ -183,7 +183,10 @@ export class MatchesService {
       });
       // If the user is not a player in the game, they need to be
       // an admin to be authorized to update the match
-      if (!user.roles.includes(Role.ADMIN)) {
+      if (
+        !user.roles.includes(Role.ADMIN) &&
+        !user.roles.includes(Role.PLAYER_ADMIN)
+      ) {
         throw new ForbiddenException(
           'User is not authorized to update this match',
         );

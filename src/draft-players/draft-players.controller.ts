@@ -26,6 +26,7 @@ import { UpdateDraftPlayerDto } from './dto/update-draft-player.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../roles-guard/roles.guard';
 import { Roles } from '../roles-guard/roles.decorator';
+import { EnrollmentEntity } from 'src/enrollments/entities/enrollment.entity';
 
 @Controller('draft-players')
 @ApiTags('draft-players')
@@ -61,7 +62,7 @@ export class DraftPlayersController {
   @ApiCreatedResponse({ type: DraftPlayerEntity })
   update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() updateDraftPlayerDto: UpdateDraftPlayerDto
+    @Body() updateDraftPlayerDto: UpdateDraftPlayerDto,
   ) {
     return this.draftPlayersService.update(id, updateDraftPlayerDto);
   }
@@ -75,6 +76,15 @@ export class DraftPlayersController {
     return this.draftPlayersService.remove(id);
   }
 
+  @Get('draft/:draftId')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(['ADMIN', 'PLAYER_ADMIN'])
+  @ApiOkResponse({ type: EnrollmentEntity, isArray: true })
+  getAllForDraft(@Param('draftId', ParseIntPipe) draftId: number) {
+    return this.draftPlayersService.findByDraft(draftId);
+  }
+
   @Get('tournament/:id')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
@@ -82,7 +92,7 @@ export class DraftPlayersController {
   findByTournament(@Req() req: Request, @Param('id', ParseIntPipe) id: number) {
     return this.draftPlayersService.findByTournamentFromUser(
       id,
-      req.user['id']
+      req.user['id'],
     );
   }
 
@@ -92,7 +102,7 @@ export class DraftPlayersController {
   @ApiOkResponse({ type: DraftPlayerEntity })
   getPoolStatus(
     @Req() req: Request,
-    @Param('tournamentId', ParseIntPipe) tournamentId: number
+    @Param('tournamentId', ParseIntPipe) tournamentId: number,
   ) {
     return this.draftPlayersService.getPoolStatus(tournamentId, req.user['id']);
   }

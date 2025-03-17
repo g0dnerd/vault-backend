@@ -34,7 +34,7 @@ export class TournamentsController {
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(['ADMIN'])
+  @Roles(['ADMIN', 'PLAYER_ADMIN'])
   @ApiCreatedResponse({ type: TournamentEntity })
   create(@Body() createTournamentDto: CreateTournamentDto) {
     return this.tournamentsService.create(createTournamentDto);
@@ -43,7 +43,7 @@ export class TournamentsController {
   @Get()
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(['ADMIN'])
+  @Roles(['ADMIN', 'PLAYER_ADMIN'])
   @ApiOkResponse({ type: TournamentEntity, isArray: true })
   findAll() {
     return this.tournamentsService.findAll();
@@ -100,7 +100,7 @@ export class TournamentsController {
   @ApiOkResponse({ type: TournamentEntity })
   update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() updateTournamentDto: UpdateTournamentDto
+    @Body() updateTournamentDto: UpdateTournamentDto,
   ) {
     return this.tournamentsService.update(id, updateTournamentDto);
   }

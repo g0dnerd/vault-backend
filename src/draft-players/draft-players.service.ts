@@ -59,6 +59,26 @@ export class DraftPlayersService {
     });
   }
 
+  findByDraft(draftId: number) {
+    return this.prisma.enrollment.findMany({
+      where: {
+        draftEnrollments: {
+          some: {
+            draftId,
+          },
+        },
+      },
+      select: {
+        id: true,
+        user: {
+          select: {
+            username: true,
+          },
+        },
+      },
+    });
+  }
+
   async findByUser(userId: number) {
     return this.prisma.draftPlayer.findMany({
       where: {
