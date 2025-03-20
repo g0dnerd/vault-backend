@@ -21,10 +21,10 @@ export class CreatePhaseDto {
   @IsBoolean()
   @IsOptional()
   @ApiProperty({ required: false, default: false })
-  started: boolean;
+  started?: boolean;
 
   @IsBoolean()
   @IsOptional()
   @ApiProperty({ required: false, default: false })
-  finished: boolean;
+  finished?: boolean;
 }

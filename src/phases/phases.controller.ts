@@ -7,19 +7,44 @@ import {
   ParseIntPipe,
   NotFoundException,
   UseGuards,
+  Post,
 } from '@nestjs/common';
 import { PhasesService } from './phases.service';
 import { UpdatePhaseDto } from './dto/update-phase.dto';
-import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { PhaseEntity } from './entities/phase.entity';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../roles-guard/roles.guard';
 import { Roles } from '../roles-guard/roles.decorator';
+import { CreatePhaseDto } from './dto/create-phase.dto';
 
 @Controller('phases')
 @ApiTags('phases')
 export class PhasesController {
   constructor(private readonly phasesService: PhasesService) {}
+
+  @Post()
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(['ADMIN', 'PLAYER_ADMIN'])
+  @ApiCreatedResponse({ type: PhaseEntity })
+  create(@Body() createPhaseDto: CreatePhaseDto) {
+    // return this.phasesService.create(createPhaseDto);
+  }
+
+  @Post('no-index')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(['ADMIN', 'PLAYER_ADMIN'])
+  @ApiCreatedResponse({ type: PhaseEntity })
+  createWithoutPhaseIndex(@Body() data: Partial<CreatePhaseDto>) {
+    return this.phasesService.createWithoutPhaseIndex(data);
+  }
 
   @Get(':id')
   @ApiBearerAuth()
@@ -41,8 +66,17 @@ export class PhasesController {
   @ApiOkResponse({ type: PhaseEntity })
   update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() updatePhaseDto: UpdatePhaseDto
+    @Body() updatePhaseDto: UpdatePhaseDto,
   ) {
     return this.phasesService.update(id, updatePhaseDto);
+  }
+
+  @Get('tournament/:tournamentId')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(['ADMIN', 'PLAYER_ADMIN'])
+  @ApiOkResponse({ type: PhaseEntity, isArray: true })
+  findByTournament(@Param('tournamentId', ParseIntPipe) tournamentId: number) {
+    return this.phasesService.findByTournament(tournamentId);
   }
 }

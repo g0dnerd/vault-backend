@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { CreatePhaseDto } from './dto/create-phase.dto';
 import { UpdatePhaseDto } from './dto/update-phase.dto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -7,8 +7,33 @@ import { PrismaService } from '../prisma/prisma.service';
 export class PhasesService {
   constructor(private prisma: PrismaService) {}
 
-  create(createPhaseDto: CreatePhaseDto) {
-    return this.prisma.phase.create({ data: createPhaseDto });
+  async createWithoutPhaseIndex(data: Partial<CreatePhaseDto>) {
+    const { tournamentId, roundAmount } = data;
+
+    let createPhaseDto: CreatePhaseDto = {
+      tournamentId,
+      roundAmount,
+      phaseIndex: 0,
+    };
+
+    const phases = await this.prisma.phase.findMany({
+      where: { tournamentId },
+      orderBy: { phaseIndex: 'desc' },
+    });
+
+    if (!phases) {
+      createPhaseDto = { ...createPhaseDto, phaseIndex: 1 };
+    } else {
+      createPhaseDto = {
+        ...createPhaseDto,
+        phaseIndex: phases[0].phaseIndex + 1,
+      };
+    }
+    try {
+      return await this.prisma.phase.create({ data: createPhaseDto });
+    } catch (error) {
+      return new InternalServerErrorException();
+    }
   }
 
   findAll() {
@@ -17,6 +42,24 @@ export class PhasesService {
 
   findOne(id: number) {
     return this.prisma.phase.findUnique({ where: { id } });
+  }
+
+  findByTournament(tournamentId: number) {
+    return this.prisma.phase.findMany({
+      where: {
+        tournamentId,
+      },
+      select: {
+        id: true,
+        roundAmount: true,
+        phaseIndex: true,
+        tournament: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    });
   }
 
   update(id: number, updatePhaseDto: UpdatePhaseDto) {
