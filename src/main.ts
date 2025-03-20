@@ -36,14 +36,14 @@ async function bootstrap() {
   app.use(
     expressSession({
       cookie: {
-        maxAge: 60 * 1000,
+        maxAge: 60 * 10 * 1000,
       },
       secret: sessionSecret,
       name: 'session',
       resave: true,
       saveUninitialized: true,
       store: new PrismaSessionStore(new PrismaClient(), {
-        checkPeriod: 60 * 1000,
+        checkPeriod: 60 * 10 * 1000,
         dbRecordIdIsSessionId: true,
         dbRecordIdFunction: undefined,
       }),
