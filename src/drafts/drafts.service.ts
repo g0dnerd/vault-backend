@@ -8,11 +8,31 @@ export class DraftsService {
   constructor(private prisma: PrismaService) {}
 
   create(createDraftDto: CreateDraftDto) {
-    return this.prisma.draft.create({ data: createDraftDto });
-  }
-
-  findAll() {
-    return this.prisma.draft.findMany();
+    return this.prisma.draft.create({
+      data: createDraftDto,
+      include: {
+        players: {
+          select: {
+            enrollment: { select: { user: { select: { username: true } } } },
+            seat: true,
+            bye: true,
+            hadBye: true,
+          },
+        },
+        cube: {
+          select: {
+            name: true,
+            id: true,
+          },
+        },
+        phase: {
+          select: {
+            tournamentId: true,
+            roundAmount: true,
+          },
+        },
+      },
+    });
   }
 
   findOne(id: number) {
@@ -44,7 +64,32 @@ export class DraftsService {
   }
 
   update(id: number, updateDraftDto: UpdateDraftDto) {
-    return this.prisma.draft.update({ where: { id }, data: updateDraftDto });
+    return this.prisma.draft.update({
+      where: { id },
+      data: updateDraftDto,
+      include: {
+        players: {
+          select: {
+            enrollment: { select: { user: { select: { username: true } } } },
+            seat: true,
+            bye: true,
+            hadBye: true,
+          },
+        },
+        cube: {
+          select: {
+            name: true,
+            id: true,
+          },
+        },
+        phase: {
+          select: {
+            tournamentId: true,
+            roundAmount: true,
+          },
+        },
+      },
+    });
   }
 
   remove(id: number) {
@@ -63,13 +108,24 @@ export class DraftsService {
       include: {
         players: {
           select: {
-            enrollment: { select: { user: { select: { username: true } } } },
+            enrollment: {
+              select: { user: { select: { username: true } } },
+            },
+            seat: true,
+            bye: true,
+            hadBye: true,
           },
         },
         cube: {
           select: {
-            id: true,
             name: true,
+            id: true,
+          },
+        },
+        phase: {
+          select: {
+            tournamentId: true,
+            roundAmount: true,
           },
         },
       },
@@ -93,10 +149,26 @@ export class DraftsService {
       select: {
         draft: {
           include: {
+            players: {
+              select: {
+                enrollment: {
+                  select: { user: { select: { username: true } } },
+                },
+                seat: true,
+                bye: true,
+                hadBye: true,
+              },
+            },
             cube: {
               select: {
                 name: true,
                 id: true,
+              },
+            },
+            phase: {
+              select: {
+                tournamentId: true,
+                roundAmount: true,
               },
             },
           },
@@ -139,14 +211,20 @@ export class DraftsService {
           select: {
             enrollment: { select: { user: { select: { username: true } } } },
             seat: true,
-          },
-          orderBy: {
-            seat: 'asc',
+            bye: true,
+            hadBye: true,
           },
         },
         cube: {
           select: {
             name: true,
+            id: true,
+          },
+        },
+        phase: {
+          select: {
+            tournamentId: true,
+            roundAmount: true,
           },
         },
       },

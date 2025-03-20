@@ -36,7 +36,7 @@ export class DraftsController {
   @Post()
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(['ADMIN'])
+  @Roles(['ADMIN', 'PLAYER_ADMIN'])
   @ApiCreatedResponse({ type: DraftEntity })
   create(@Body() createDraftDto: CreateDraftDto) {
     return this.draftsService.create(createDraftDto);
@@ -84,7 +84,7 @@ export class DraftsController {
   @Patch(':id')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(['ADMIN'])
+  @Roles(['ADMIN', 'PLAYER_ADMIN'])
   @ApiOkResponse({ type: DraftEntity })
   update(
     @Param('id', ParseIntPipe) id: number,
