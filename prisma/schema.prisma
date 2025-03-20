@@ -27,6 +27,7 @@ model User {
   createdAt      DateTime     @default(now())
   password       String
   profilePicture String?
+  isSocialLogin  Boolean      @default(false)
   updatedAt      DateTime     @default(now()) @updatedAt
   enrollments    Enrollment[]
   cubes          Cube[]
