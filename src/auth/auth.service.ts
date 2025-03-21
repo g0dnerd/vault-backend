@@ -1,4 +1,3 @@
-import { Request } from 'express';
 import {
   BadRequestException,
   Injectable,
@@ -8,18 +7,15 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import * as jwt from 'jsonwebtoken';
-import JwksRsa, { TokenHeader } from 'jwks-rsa';
 
 import { PrismaService } from '../prisma/prisma.service';
-import { AuthEntity, GoogleAuthEntity } from './entities/auth.entity';
-import { GoogleLoginDto } from './dto/login.dto';
+import { AuthEntity, GoogleLoginDto } from './entities/auth.entity';
 
 const GOOGLE_LOGIN_ERRORS = {
   MISSING_CSRF_TOKEN: 'Expected CSRF token in request cookie but found none.',
   CSRF_TOKEN_MISMATCH: 'Failed to verify double submit cookie.',
   CLIENT_ID_MISMATCH: 'Client ID mismatch',
-  ISS_MISMATCH: 'ISS mismatch',
+  ISSUER_MISMATCH: 'ISS mismatch',
   MISSING_EXPIRY: 'Missing expiry timeframe',
   CREDENTIALS_EXPIRED: 'Credentials expired',
   MISSING_EMAIL: 'Missing email address',
@@ -90,33 +86,11 @@ export class AuthService {
     };
   }
 
-  // Attempts to log in a user via Google OAuth2.
-  // Verifies that the tokens in the requests cookies and body match and verifies their signatures
-  // using Google's public keys. Passwordless login is permitted if google is authoritative for the user's
-  // verification.
-  async googleLogin(
-    req: Request,
-    googleLoginDto: GoogleLoginDto,
-  ): Promise<AuthEntity> {
-    // Get the token from the request body
-    const { credential, g_csrf_token } = googleLoginDto;
-
-    // Get the token from the request cookie
-    const csrfTokenCookie = req.cookies['g_csrf_token'];
-    if (!csrfTokenCookie) {
-      throw new BadRequestException(GOOGLE_LOGIN_ERRORS.MISSING_CSRF_TOKEN);
-    }
-
-    // Ensure both tokens match
-    if (g_csrf_token !== csrfTokenCookie) {
-      throw new BadRequestException(GOOGLE_LOGIN_ERRORS.CSRF_TOKEN_MISMATCH);
-    }
-
-    const jwksUri = this.configService.get('GOOGLE_PUB_KEY_URI');
+  async googleLogin(googleLoginDto: GoogleLoginDto): Promise<AuthEntity> {
     const clientId = this.configService.get('GOOGLE_CLIENT_ID');
+    verifyGooglePayload(googleLoginDto, clientId);
 
-    const email = await verifyJwt(credential, clientId, jwksUri);
-
+    const { email } = googleLoginDto;
     const user = await this.findOrCreateSocialUser(email);
 
     return {
@@ -145,51 +119,7 @@ export class AuthService {
   }
 }
 
-async function verifyJwt(
-  credential: string,
-  clientId: string,
-  jwksUri: string,
-): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const client = JwksRsa({
-      jwksUri,
-    });
-
-    // Callback function for fetching public keys for JWT/JWKS verification
-    function getKey(
-      header: TokenHeader,
-      callback: (err: Error | null, key: string) => void,
-    ) {
-      client.getSigningKey(header.kid, function (err, key) {
-        const signingKey = key.getPublicKey();
-        callback(err, signingKey);
-      });
-    }
-
-    jwt.verify(
-      credential,
-      getKey,
-      { algorithms: ['RS256'] },
-      function (err, decoded: GoogleAuthEntity) {
-        if (err) {
-          return reject(new BadRequestException(err.message));
-        }
-
-        try {
-          const email = verifyDecodedToken(decoded, clientId);
-          resolve(email);
-        } catch (error) {
-          reject(error);
-        }
-      },
-    );
-  });
-}
-
-function verifyDecodedToken(
-  decoded: GoogleAuthEntity,
-  clientId: string,
-): string {
+function verifyGooglePayload(decoded: GoogleLoginDto, clientId: string) {
   // Verify that the value of `aud` in the ID token is equal to one of our client IDs
   if (decoded.aud !== clientId) {
     throw new BadRequestException(GOOGLE_LOGIN_ERRORS.CLIENT_ID_MISMATCH);
@@ -201,7 +131,7 @@ function verifyDecodedToken(
       decoded.iss,
     )
   ) {
-    throw new BadRequestException(GOOGLE_LOGIN_ERRORS.ISS_MISMATCH);
+    throw new BadRequestException(GOOGLE_LOGIN_ERRORS.ISSUER_MISMATCH);
   }
 
   // Verify that the credential expiry timeframe has not passed
@@ -228,11 +158,11 @@ function verifyDecodedToken(
     throw new BadRequestException(GOOGLE_LOGIN_ERRORS.MISSING_EMAIL);
   }
   if (
-    parsedEmail.endsWith('@gmail.com') ||
-    (decoded.email_verified && decoded.hd)
+    !(
+      parsedEmail.endsWith('@gmail.com') ||
+      (decoded.email_verified && decoded.hd)
+    )
   ) {
-    return parsedEmail;
-  } else {
     // TODO: Offer a signup flow for non google-verified users
     throw new BadRequestException(GOOGLE_LOGIN_ERRORS.NON_AUTHORITY);
   }
