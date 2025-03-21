@@ -9,6 +9,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { PrismaClient } from '@prisma/client';
 import { PrismaSessionStore } from '@quixo3/prisma-session-store';
 import expressSession from 'express-session';
+import cookieParser from 'cookie-parser';
 
 import { AppModule } from './app/app.module';
 import { HttpExceptionFilter } from './http-exception-filter/http-exception.filter';
@@ -49,6 +50,8 @@ async function bootstrap() {
       }),
     }),
   );
+
+  app.use(cookieParser());
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));

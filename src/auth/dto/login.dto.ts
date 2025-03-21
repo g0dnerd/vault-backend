@@ -13,3 +13,15 @@ export class LoginDto {
   @ApiProperty()
   password: string;
 }
+
+export class GoogleLoginDto {
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty()
+  credential: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty()
+  g_csrf_token: string;
+}
