@@ -16,6 +16,17 @@ import { AuthEntity, GoogleAuthEntity } from './entities/auth.entity';
 import { UserEntity } from '../users/entities/user.entity';
 import { GoogleLoginDto } from './dto/login.dto';
 
+const GOOGLE_LOGIN_ERRORS = {
+  MISSING_CSRF_TOKEN: 'Expected CSRF token in request cookie but found none.',
+  CSRF_TOKEN_MISMATCH: 'Failed to verify double submit cookie.',
+  CLIENT_ID_MISMATCH: 'Client ID mismatch',
+  ISS_MISMATCH: 'ISS mismatch',
+  MISSING_EXPIRY: 'Missing expiry timeframe',
+  CREDENTIALS_EXPIRED: 'Credentials expired',
+  MISSING_EMAIL: 'Missing email address',
+  NON_AUTHORITY: 'Google is not authoritative for user verification',
+};
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -96,14 +107,12 @@ export class AuthService {
     // Get the token from the request cookie
     const csrfTokenCookie = req.cookies['g_csrf_token'];
     if (!csrfTokenCookie) {
-      throw new BadRequestException(
-        'Expected CSRF token in request cookie but found none.',
-      );
+      throw new BadRequestException(GOOGLE_LOGIN_ERRORS.MISSING_CSRF_TOKEN);
     }
 
     // Ensure both tokens match
     if (g_csrf_token !== csrfTokenCookie) {
-      throw new BadRequestException('Failed to verify double submit cookie.');
+      throw new BadRequestException(GOOGLE_LOGIN_ERRORS.CSRF_TOKEN_MISMATCH);
     }
 
     const jwksUri = this.configService.get('GOOGLE_PUB_KEY_URI');
@@ -111,6 +120,15 @@ export class AuthService {
 
     const email = await verifyJwt(credential, clientId, jwksUri);
 
+    const user = await this.findOrCreateSocialUser(email);
+
+    return {
+      token: this.jwtService.sign({ userId: user.id }),
+      roles: user.roles,
+    };
+  }
+
+  private async findOrCreateSocialUser(email: string) {
     let user = await this.prisma.user.findUnique({
       where: { email },
     });
@@ -126,14 +144,11 @@ export class AuthService {
       });
     }
 
-    return {
-      token: this.jwtService.sign({ userId: user.id }),
-      roles: user.roles,
-    };
+    return user;
   }
 }
 
-function verifyJwt(
+async function verifyJwt(
   credential: string,
   clientId: string,
   jwksUri: string,
@@ -180,7 +195,7 @@ function verifyDecodedToken(
 ): string {
   // Verify that the value of `aud` in the ID token is equal to one of our client IDs
   if (decoded.aud !== clientId) {
-    throw new BadRequestException('Client ID mismatch');
+    throw new BadRequestException(GOOGLE_LOGIN_ERRORS.CLIENT_ID_MISMATCH);
   }
 
   // Verify that the token origin is authentic
@@ -189,19 +204,19 @@ function verifyDecodedToken(
       decoded.iss,
     )
   ) {
-    throw new BadRequestException('ISS mismatch');
+    throw new BadRequestException(GOOGLE_LOGIN_ERRORS.ISS_MISMATCH);
   }
 
   // Verify that the credential expiry timeframe has not passed
   const expiryNum = decoded.exp;
   if (!expiryNum) {
-    throw new BadRequestException('Missing expiry timeframe');
+    throw new BadRequestException(GOOGLE_LOGIN_ERRORS.MISSING_EXPIRY);
   }
 
   // JWT exp is in seconds, not milliseconds (RFC 7519)
   const expiry = new Date(expiryNum * 1000);
   if (expiry < new Date()) {
-    throw new BadRequestException('Credentials expired');
+    throw new BadRequestException(GOOGLE_LOGIN_ERRORS.CREDENTIALS_EXPIRED);
   }
 
   // Using the email, email_verified and hd fields, you can determine
@@ -213,7 +228,7 @@ function verifyDecodedToken(
   //   - email_verified is true and hd is set, this is a G Suite account.
   const parsedEmail = decoded.email;
   if (!parsedEmail) {
-    throw new BadRequestException('Missing email address');
+    throw new BadRequestException(GOOGLE_LOGIN_ERRORS.MISSING_EMAIL);
   }
   if (
     parsedEmail.endsWith('@gmail.com') ||
@@ -222,8 +237,6 @@ function verifyDecodedToken(
     return parsedEmail;
   } else {
     // TODO: Offer a signup flow for non google-verified users
-    throw new BadRequestException(
-      'Google is not authoritative for user verification',
-    );
+    throw new BadRequestException(GOOGLE_LOGIN_ERRORS.NON_AUTHORITY);
   }
 }
