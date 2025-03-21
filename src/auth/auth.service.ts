@@ -13,7 +13,6 @@ import JwksRsa, { TokenHeader } from 'jwks-rsa';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthEntity, GoogleAuthEntity } from './entities/auth.entity';
-import { UserEntity } from '../users/entities/user.entity';
 import { GoogleLoginDto } from './dto/login.dto';
 
 const GOOGLE_LOGIN_ERRORS = {
@@ -82,11 +81,9 @@ export class AuthService {
   }
 
   async status(userId: number): Promise<AuthEntity> {
-    const user = new UserEntity(
-      await this.prisma.user.findUnique({
-        where: { id: userId },
-      }),
-    );
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
     return {
       token: this.jwtService.sign({ userId: user.id }),
       roles: user.roles,
