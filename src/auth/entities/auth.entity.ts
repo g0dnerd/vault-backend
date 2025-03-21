@@ -13,17 +13,18 @@ export class AuthEntity {
 }
 
 export interface GoogleAuthEntity {
-  iss: string;
-  azp: string;
-  aud: string;
-  sub: string;
-  email_verified: boolean;
-  nbf: string;
-  name: string;
-  picture: string;
-  given_name: string;
-  family_name: string;
-  iat: string;
-  exp: string;
-  jti: string;
+  iss?: string | undefined;
+  sub?: string | undefined;
+  aud?: string | string[] | undefined;
+  exp?: number | undefined;
+  nbf?: number | undefined;
+  iat?: number | undefined;
+  jti?: string | undefined;
+  email?: string | undefined;
+  name?: string | undefined;
+  picture?: string | undefined;
+  given_name?: string | undefined;
+  family_name?: string | undefined;
+  email_verified?: boolean | undefined;
+  hd?: string | undefined;
 }
