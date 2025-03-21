@@ -8,6 +8,7 @@ import {
   Post,
   Req,
   UnauthorizedException,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
@@ -16,6 +17,7 @@ import { AuthService } from './auth.service';
 import { AuthEntity } from './entities/auth.entity';
 import { GoogleLoginDto, LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { JwtAuthGuard } from './jwt-auth.guard';
 
 @Controller('auth')
 @ApiTags('auth')
@@ -37,6 +39,7 @@ export class AuthController {
     try {
       return await this.authService.googleLogin(req, googleLoginDto);
     } catch (error) {
+      console.error(error);
       throw new BadRequestException(error.response);
     }
   }
@@ -61,6 +64,7 @@ export class AuthController {
   }
 
   @Get('status')
+  @UseGuards(JwtAuthGuard)
   @ApiOkResponse({ type: AuthEntity })
   status(@Req() req: Request) {
     if (!(req.headers && req.headers.authorization)) {
