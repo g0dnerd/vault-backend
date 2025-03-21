@@ -1,5 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString } from 'class-validator';
+import {
+  IsBoolean,
+  IsEmail,
+  IsInt,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 import { Role } from '@prisma/client';
 
@@ -12,19 +18,66 @@ export class AuthEntity {
   roles: Role[];
 }
 
-export interface GoogleAuthEntity {
-  iss?: string | undefined;
-  sub?: string | undefined;
-  aud?: string | string[] | undefined;
-  exp?: number | undefined;
-  nbf?: number | undefined;
-  iat?: number | undefined;
-  jti?: string | undefined;
-  email?: string | undefined;
-  name?: string | undefined;
-  picture?: string | undefined;
-  given_name?: string | undefined;
-  family_name?: string | undefined;
-  email_verified?: boolean | undefined;
-  hd?: string | undefined;
+export class GoogleLoginDto {
+  @ApiProperty()
+  @IsString()
+  iss: string;
+
+  @ApiProperty()
+  @IsString()
+  azp: string | string[];
+
+  @ApiProperty()
+  @IsString()
+  aud: string | string[];
+
+  @ApiProperty()
+  @IsString()
+  sub: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsEmail()
+  email: string;
+
+  @ApiProperty()
+  @IsBoolean()
+  email_verified: boolean;
+
+  @ApiProperty()
+  @IsInt()
+  nbf: number;
+
+  @ApiProperty()
+  @IsString()
+  name: string;
+
+  @ApiProperty()
+  @IsString()
+  picture: string;
+
+  @ApiProperty()
+  @IsString()
+  given_name: string;
+
+  @ApiProperty()
+  @IsString()
+  family_name: string;
+
+  @ApiProperty()
+  @IsInt()
+  iat: number;
+
+  @ApiProperty()
+  @IsInt()
+  exp: number;
+
+  @ApiProperty()
+  @IsString()
+  jti: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  hd?: string;
 }
