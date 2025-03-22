@@ -25,14 +25,13 @@ export class TournamentsService {
     return this.prisma.tournament.findUnique({ where: { id } });
   }
 
-  async findByUser(userId: number) {
-    const enrollments = await this.prisma.enrollment.findMany({
-      where: { userId: userId },
-    });
+  findByUser(userId: number) {
     return this.prisma.tournament.findMany({
       where: {
-        id: {
-          in: enrollments.map((enrollment) => enrollment.tournamentId),
+        enrollments: {
+          some: {
+            userId,
+          },
         },
       },
     });
@@ -52,17 +51,14 @@ export class TournamentsService {
     });
   }
 
-  async findAvailableForUser(userId: number) {
+  findAvailableForUser(userId: number) {
     return this.prisma.tournament.findMany({
       where: {
         public: true,
-        id: {
-          notIn: (
-            await this.prisma.enrollment.findMany({
-              where: { userId },
-              select: { tournamentId: true },
-            })
-          ).map((enrollment) => enrollment.tournamentId),
+        enrollments: {
+          none: {
+            userId,
+          },
         },
       },
     });
