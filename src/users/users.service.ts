@@ -20,19 +20,14 @@ export class UsersService {
     return this.prisma.user.create({ data: createUserDto });
   }
 
-  findAll() {
-    return this.prisma.user.findMany();
-  }
-
   findOne(id: number) {
     return this.prisma.user.findUnique({ where: { id } });
   }
 
-  findByEmail(email: string) {
-    return this.prisma.user.findUnique({ where: { email } });
-  }
-
-  async update(id: number, data: { email: string; username: string }) {
+  async update(
+    id: number,
+    data: { email: string; username: string; bio?: string },
+  ) {
     // if (data.password) {
     //   updateUserDto.password = await bcrypt.hash(
     //     updateUserDto.password,
@@ -43,10 +38,6 @@ export class UsersService {
     return this.prisma.user.update({ where: { id }, data });
   }
 
-  remove(id: number) {
-    return this.prisma.user.delete({ where: { id } });
-  }
-
   async getRoles(userId: number) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -55,11 +46,28 @@ export class UsersService {
     return user.roles;
   }
 
-  getProfile(userId: number) {
-    return this.prisma.user.findUnique({
+  async getProfile(userId: number) {
+    const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { username: true, email: true, profilePicture: true },
+      select: { username: true, email: true, profilePicture: true, bio: true },
     });
+    const tournaments = await this.prisma.tournament.findMany({
+      where: {
+        enrollments: {
+          some: {
+            userId,
+          },
+        },
+      },
+    });
+    const cubes = await this.prisma.cube.findMany({
+      where: {
+        creatorId: userId,
+      },
+    });
+    const numTournaments = tournaments.length;
+    const numCubes = cubes.length;
+    return { ...user, numTournaments, numCubes };
   }
 
   getAvailableForTournament(tournamentId: number) {

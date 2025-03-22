@@ -55,7 +55,7 @@ export class UsersController {
   @ApiOkResponse({ type: UserEntity })
   async update(
     @Req() req: Request,
-    @Body() data: { email: string; username: string },
+    @Body() data: { email: string; username: string; bio?: string },
   ) {
     return new UserEntity(await this.usersService.update(req.user['id'], data));
   }
