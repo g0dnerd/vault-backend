@@ -20,6 +20,9 @@ export class UserEntity implements User {
   email: string;
 
   @ApiProperty({ required: false, nullable: true })
+  bio: string | null;
+
+  @ApiProperty({ required: false, nullable: true })
   profilePicture: string | null;
 
   @Exclude()

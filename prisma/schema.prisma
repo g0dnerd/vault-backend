@@ -25,6 +25,7 @@ model User {
   username       String       @unique
   email          String       @unique
   createdAt      DateTime     @default(now())
+  bio            String?
   password       String?
   profilePicture String?
   isSocialLogin  Boolean      @default(false)
