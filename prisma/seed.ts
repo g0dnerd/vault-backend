@@ -1,8 +1,8 @@
 import { ImageType, PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { roundsOfHashing } from '../src/users/users.service';
 
 const prisma = new PrismaClient();
-const roundsOfHashing = 10;
 
 async function main() {
   await prisma.match.deleteMany();
@@ -151,7 +151,7 @@ async function main() {
 
   const adminUserPassword = await bcrypt.hash(
     'adminfoobar123',
-    roundsOfHashing
+    roundsOfHashing,
   );
   const adminUser = await prisma.user.upsert({
     where: { email: 'admin@foo.bar' },
