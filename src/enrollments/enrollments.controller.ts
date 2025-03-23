@@ -40,7 +40,7 @@ export class EnrollmentsController {
     return this.enrollmentsService.create(createEnrollmentDto);
   }
 
-  @Get('current')
+  @Get()
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @ApiOkResponse({ type: EnrollmentEntity, isArray: true })

@@ -10,10 +10,9 @@ import * as bcrypt from 'bcrypt';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthEntity, GoogleLoginDto } from './entities/auth.entity';
+import { roundsOfHashing } from 'src/users/users.service';
 
 const GOOGLE_LOGIN_ERRORS = {
-  MISSING_CSRF_TOKEN: 'Expected CSRF token in request cookie but found none.',
-  CSRF_TOKEN_MISMATCH: 'Failed to verify double submit cookie.',
   CLIENT_ID_MISMATCH: 'Client ID mismatch',
   ISSUER_MISMATCH: 'ISS mismatch',
   MISSING_EXPIRY: 'Missing expiry timeframe',
@@ -62,7 +61,7 @@ export class AuthService {
     password: string,
     username: string,
   ): Promise<AuthEntity> {
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, roundsOfHashing);
     const user = await this.prisma.user.create({
       data: {
         email,
@@ -76,10 +75,17 @@ export class AuthService {
     };
   }
 
-  async status(userId: number): Promise<AuthEntity> {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-    });
+  status() {
+    return true;
+  }
+
+  async refresh(id: number) {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+
+    if (!user) {
+      throw new UnauthorizedException();
+    }
+
     return {
       token: this.jwtService.sign({ userId: user.id }),
       roles: user.roles,
@@ -90,8 +96,7 @@ export class AuthService {
     const clientId = this.configService.get('GOOGLE_CLIENT_ID');
     verifyGooglePayload(googleLoginDto, clientId);
 
-    const { email } = googleLoginDto;
-    const user = await this.findOrCreateSocialUser(email);
+    const user = await this.findOrCreateSocialUser(googleLoginDto.email);
 
     return {
       token: this.jwtService.sign({ userId: user.id }),
