@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
 import { UpdateEnrollmentDto } from './dto/update-enrollment.dto';
 import { PrismaService } from '../prisma/prisma.service';
+import { Role } from '@prisma/client';
 
 interface Scorecard {
   enrollmentId: number;
@@ -276,12 +277,23 @@ export class EnrollmentsService {
     });
   }
 
-  findByUser(id: number) {
+  async findByUser(id: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
+    if (
+      !user.roles.includes(Role.ADMIN) &&
+      !user.roles.includes(Role.PLAYER_ADMIN)
+    ) {
+      return this.prisma.enrollment.findMany({
+        where: { userId: id },
+        include: {
+          tournament: true,
+        },
+      });
+    }
     return this.prisma.enrollment.findMany({
-      where: { userId: id },
-      include: {
-        tournament: true,
-      },
+      include: { tournament: true },
     });
   }
 

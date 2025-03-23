@@ -60,19 +60,19 @@ export class DraftPlayersService {
   }
 
   findByDraft(draftId: number) {
-    return this.prisma.enrollment.findMany({
+    return this.prisma.draftPlayer.findMany({
       where: {
-        draftEnrollments: {
-          some: {
-            draftId,
-          },
-        },
+        draftId,
       },
-      select: {
-        id: true,
-        user: {
+      include: {
+        enrollment: {
           select: {
-            username: true,
+            id: true,
+            user: {
+              select: {
+                username: true,
+              },
+            },
           },
         },
       },
