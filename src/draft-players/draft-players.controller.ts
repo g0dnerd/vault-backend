@@ -42,6 +42,14 @@ export class DraftPlayersController {
     return this.draftPlayersService.create(createDraftPlayerDto);
   }
 
+  @Get()
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(['ADMIN', 'PLAYER_ADMIN'])
+  findAll() {
+    return this.draftPlayersService.findAll();
+  }
+
   @Get(':id')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)

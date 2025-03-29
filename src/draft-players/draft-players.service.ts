@@ -1,11 +1,6 @@
-import {
-  ForbiddenException,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
-import { Role } from '../roles-guard/role.enum';
 import { CreateDraftPlayerDto } from './dto/create-draft-player.dto';
 import { UpdateDraftPlayerDto } from './dto/update-draft-player.dto';
 
@@ -17,14 +12,7 @@ export class DraftPlayersService {
     return this.prisma.draftPlayer.create({ data: createDraftPlayerDto });
   }
 
-  async findAll(userId: number) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) {
-      throw new UnauthorizedException('Not authorized to see this resource');
-    }
-    if (!user.roles.includes(Role.Admin)) {
-      return this.findByUser(userId);
-    }
+  async findAll() {
     return this.prisma.draftPlayer.findMany();
   }
 
