@@ -277,16 +277,16 @@ export class EnrollmentsService {
     });
   }
 
-  async findByUser(id: number) {
+  async findByUser(userId: number) {
     const user = await this.prisma.user.findUnique({
-      where: { id },
+      where: { id: userId },
     });
     if (
       !user.roles.includes(Role.ADMIN) &&
       !user.roles.includes(Role.PLAYER_ADMIN)
     ) {
       return this.prisma.enrollment.findMany({
-        where: { userId: id },
+        where: { userId },
         include: {
           tournament: true,
         },
