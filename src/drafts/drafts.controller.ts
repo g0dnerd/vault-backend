@@ -105,7 +105,7 @@ export class DraftsController {
   @Post('make-seatings/:draftId')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(['ADMIN'])
+  @Roles(['ADMIN', 'PLAYER_ADMIN'])
   @ApiOkResponse({ type: DraftEntity })
   async makeSeatings(@Param('draftId', ParseIntPipe) draftId: number) {
     try {

@@ -80,7 +80,7 @@ export class MatchesController {
   @Get('/pair-round/:draftId')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(['ADMIN'])
+  @Roles(['ADMIN', 'PLAYER_ADMIN'])
   @ApiCreatedResponse({ type: MatchEntity, isArray: true })
   async pairRound(@Param('draftId', ParseIntPipe) draftId: number) {
     try {
