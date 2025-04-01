@@ -1,3 +1,4 @@
+import { CacheKey, CacheTTL } from '@nestjs/cache-manager';
 import {
   Controller,
   Get,
@@ -40,6 +41,8 @@ export class CubesController {
   }
 
   @Get()
+  @CacheKey('cubes')
+  @CacheTTL(60000)
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @ApiOkResponse({ type: CubeEntity, isArray: true })
@@ -66,7 +69,7 @@ export class CubesController {
   @ApiOkResponse({ type: CubeEntity })
   update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() updateCubeDto: UpdateCubeDto
+    @Body() updateCubeDto: UpdateCubeDto,
   ) {
     return this.cubesService.update(id, updateCubeDto);
   }

@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -17,9 +17,33 @@ import { TournamentsModule } from '../tournaments/tournaments.module';
 import { UsersModule } from '../users/users.module';
 import { MatchGateway } from '../matches/matches.gateway';
 import { MatchesService } from '../matches/matches.service';
+import { CacheModule } from '@nestjs/cache-manager';
+import { redisStore } from 'cache-manager-redis-store';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      ignoreEnvFile: true,
+    }),
+    CacheModule.registerAsync({
+      imports: [AppModule],
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => {
+        const store = await redisStore({
+          socket: {
+            host: configService.get<string>('REDIS_HOST'),
+            port: parseInt(configService.get<string>('REDIS_PORT'), 10),
+          },
+          username: configService.get<string>('REDIS_USERNAME'),
+          password: configService.get<string>('REDIS_PASSWORD'),
+        });
+        return {
+          store: () => store,
+          ttl: 5000,
+        };
+      },
+    }),
     PrismaModule,
     AuthModule,
     CubesModule,
@@ -32,10 +56,6 @@ import { MatchesService } from '../matches/matches.service';
     RoundsModule,
     TournamentsModule,
     UsersModule,
-    ConfigModule.forRoot({
-      isGlobal: true,
-      ignoreEnvFile: true,
-    }),
   ],
   controllers: [AppController],
   providers: [AppService, MatchGateway, MatchesService],

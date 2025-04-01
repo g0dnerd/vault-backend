@@ -37,7 +37,7 @@ async function bootstrap() {
   app.use(
     expressSession({
       cookie: {
-        maxAge: 60 * 10 * 1000,
+        maxAge: 10 * 60 * 1000,
       },
       secret: sessionSecret,
       name: 'session',
@@ -73,7 +73,7 @@ async function bootstrap() {
   );
 
   const port = parseInt(configService.get('PORT') || '3000', 10);
-  await app.listen(port);
+  await app.listen(port, '::');
   Logger.log(`Application is running on port ${port}/${globalPrefix}`);
 }
 
