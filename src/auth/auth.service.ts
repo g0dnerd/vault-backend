@@ -1,7 +1,6 @@
 import {
   BadRequestException,
   Injectable,
-  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -11,6 +10,12 @@ import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthEntity, GoogleLoginDto } from './entities/auth.entity';
 import { roundsOfHashing } from 'src/users/users.service';
+import {
+  DuplicateEmailException,
+  DuplicateUsernameException,
+  InvalidCredentialsException,
+  TraditionalLoginWithOauthException,
+} from './auth.exception';
 
 const GOOGLE_LOGIN_ERRORS = {
   CLIENT_ID_MISMATCH: 'Client ID mismatch',
@@ -35,19 +40,17 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new NotFoundException(`User not found for email ${email}`);
+      throw new InvalidCredentialsException();
     }
 
     if (user.isSocialLogin) {
-      throw new BadRequestException(
-        'Cannot use traditional auth to authenticate OAuth account',
-      );
+      throw new TraditionalLoginWithOauthException();
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new InvalidCredentialsException();
     }
 
     return {
@@ -62,6 +65,19 @@ export class AuthService {
     username: string,
   ): Promise<AuthEntity> {
     const hashedPassword = await bcrypt.hash(password, roundsOfHashing);
+
+    const userByEmail = await this.prisma.user.findUnique({ where: { email } });
+    if (userByEmail) {
+      throw new DuplicateEmailException();
+    }
+
+    const userByUsername = await this.prisma.user.findUnique({
+      where: { username },
+    });
+    if (userByUsername) {
+      throw new DuplicateUsernameException();
+    }
+
     const user = await this.prisma.user.create({
       data: {
         email,
