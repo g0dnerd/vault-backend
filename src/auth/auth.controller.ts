@@ -4,8 +4,6 @@ import {
   Body,
   Controller,
   Get,
-  HttpException,
-  HttpStatus,
   Post,
   Req,
   UseGuards,
@@ -41,21 +39,8 @@ export class AuthController {
 
   @Post('register')
   @ApiCreatedResponse({ type: AuthEntity })
-  async register(@Body() { email, password, username }: RegisterDto) {
-    try {
-      return await this.authService.register(email, password, username);
-    } catch (error) {
-      throw new HttpException(
-        {
-          status: HttpStatus.BAD_REQUEST,
-          error: 'Error in registration form',
-        },
-        HttpStatus.BAD_REQUEST,
-        {
-          cause: error,
-        },
-      );
-    }
+  register(@Body() { email, password, username }: RegisterDto) {
+    return this.authService.register(email, password, username);
   }
 
   @Get('status')

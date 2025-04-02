@@ -20,6 +20,15 @@ export class PrismaClientExceptionFilter extends BaseExceptionFilter {
         });
         break;
       }
+      // Foreign key constraint violation
+      case 'P2003': {
+        const status = HttpStatus.CONFLICT;
+        response.status(status).json({
+          statusCode: status,
+          message,
+        });
+        break;
+      }
       default:
         super.catch(exception, host);
         break;
