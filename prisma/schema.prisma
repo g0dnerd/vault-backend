@@ -152,7 +152,7 @@ model Image {
   id            Int         @id @default(autoincrement())
   draftPlayer   DraftPlayer @relation(fields: [draftPlayerId], references: [id])
   draftPlayerId Int
-  url           String      @unique
+  storagePath   String      @unique
   imageType     ImageType
   timestamp     DateTime    @default(now())
 }

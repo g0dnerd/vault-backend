@@ -9,7 +9,7 @@ export class ImageEntity implements Image {
   draftPlayerId: number;
 
   @ApiProperty()
-  url: string;
+  storagePath: string;
 
   @ApiProperty()
   timestamp: Date;

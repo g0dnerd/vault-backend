@@ -1,6 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { ImageType } from '@prisma/client';
-import { IsInt, IsNumber, IsPositive, IsUrl } from 'class-validator';
+import {
+  IsInt,
+  IsNotEmpty,
+  IsNumber,
+  IsPositive,
+  IsString,
+} from 'class-validator';
 
 export class CreateImageDto {
   @IsNumber()
@@ -9,9 +15,10 @@ export class CreateImageDto {
   @ApiProperty()
   draftPlayerId: number;
 
-  @IsUrl()
+  @IsString()
+  @IsNotEmpty()
   @ApiProperty()
-  url: string;
+  storagePath: string;
 
   @ApiProperty()
   imageType: ImageType;

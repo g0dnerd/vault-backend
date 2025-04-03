@@ -1,15 +1,19 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { createWriteStream, existsSync, mkdirSync } from 'fs';
-import { join } from 'path';
 
 import { Role } from '../roles-guard/role.enum';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateImageDto } from './dto/create-image.dto';
 import { UpdateImageDto } from './dto/update-image.dto';
+import { NestMinioService } from 'nestjs-minio';
+import { MinioError } from './storage.error';
+import { ImageType } from '@prisma/client';
 
 @Injectable()
 export class ImagesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly minioService: NestMinioService,
+  ) {}
 
   create(createImageDto: CreateImageDto) {
     return this.prisma.image.create({ data: createImageDto });
@@ -31,25 +35,86 @@ export class ImagesService {
     return this.prisma.image.findMany();
   }
 
-  // FIXME: this is only a proof of concept and needs
-  // - more validation
-  // - unique file names and paths
-  // - handling of dev vs prod env
-  // - GCS support
-  async handleUpload(file: Express.Multer.File) {
-    const uploadPath = join(__dirname, '..', '..', '..', 'userupload');
-    if (!existsSync(uploadPath)) {
-      mkdirSync(uploadPath, { recursive: true });
-    }
-    const fpath = join(uploadPath, file.originalname);
+  async handleUpload(
+    file: Express.Multer.File,
+    userId: number,
+    tournamentId: number,
+    checkin: boolean,
+  ) {
+    const client = this.minioService.getMinio();
+    const metaData = {
+      'Content-Type': file.mimetype,
+      'X-Amz-Meta-Timestamp': new Date().toISOString(),
+      'X-Amz-Meta-UserId': `${userId}`,
+    };
 
-    const writeStream = createWriteStream(fpath);
-    writeStream.write(file.buffer);
-    writeStream.end();
+    const player = await this.prisma.draftPlayer.findFirst({
+      where: {
+        enrollment: {
+          userId,
+          tournamentId,
+        },
+        draft: {
+          started: true,
+          finished: false,
+        },
+      },
+      select: {
+        id: true,
+        checkedIn: true,
+        checkedOut: true,
+        enrollment: {
+          select: {
+            user: {
+              select: { username: true },
+            },
+          },
+        },
+      },
+    });
+
+    const filename = `${player.enrollment.user.username}-${new Date().toISOString()}.jpg`;
+
+    try {
+      await client.putObject(
+        'user-upload',
+        filename,
+        file.buffer,
+        file.size,
+        metaData,
+      );
+    } catch (error) {
+      console.error('MinIO error:', error);
+      throw new MinioError();
+    }
+
+    const imageType: ImageType = checkin
+      ? ImageType.CHECKIN
+      : ImageType.CHECKOUT;
+
+    await this.prisma.image.create({
+      data: {
+        draftPlayerId: player.id,
+        storagePath: filename,
+        imageType,
+      },
+    });
+
+    try {
+      const url = await client.presignedGetObject(
+        'user-upload',
+        filename,
+        24 * 60 * 60,
+      );
+      return { url };
+    } catch (error) {
+      console.error('MinIO error:', error);
+      throw new MinioError();
+    }
   }
 
   async findForUser(userId: number) {
-    return this.prisma.image.findMany({
+    const images = await this.prisma.image.findMany({
       where: {
         draftPlayer: {
           enrollment: {
@@ -58,6 +123,22 @@ export class ImagesService {
         },
       },
     });
+
+    if (!images) {
+      return [];
+    }
+
+    const client = this.minioService.getMinio();
+    const ret = [];
+    for (const image of images) {
+      const url = await client.presignedGetObject(
+        'user-upload',
+        image.storagePath,
+        24 * 60 * 60,
+      );
+      ret.push({ id: image.id, url });
+    }
+    return ret;
   }
 
   async findOne(id: number, userId: number) {
