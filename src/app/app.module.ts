@@ -19,13 +19,17 @@ import { MatchGateway } from '../matches/matches.gateway';
 import { MatchesService } from '../matches/matches.service';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-store';
+import { NestMinioModule } from 'nestjs-minio';
 
 @Module({
   imports: [
+    // globally provide `ConfigService` for environment variables
     ConfigModule.forRoot({
       isGlobal: true,
       ignoreEnvFile: true,
     }),
+
+    // register the redis cache asynchronously with the connection data from an injected config service.
     CacheModule.registerAsync({
       imports: [AppModule],
       inject: [ConfigService],
@@ -43,6 +47,19 @@ import { redisStore } from 'cache-manager-redis-store';
           ttl: 5000,
         };
       },
+    }),
+
+    // register S3 file storage module
+    NestMinioModule.registerAsync({
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => ({
+        // otherwise, get S3 data from environment variables and connect to the bucket
+        endPoint: configService.get<string>('S3_ENDPOINT'),
+        port: parseInt(configService.get<string>('S3_PORT'), 10),
+        useSSL: true,
+        accessKey: configService.get<string>('S3_ACCESS_KEY'),
+        secretKey: configService.get<string>('S3_SECRET_KEY'),
+      }),
     }),
     PrismaModule,
     AuthModule,

@@ -14,9 +14,7 @@ import {
   Req,
   UseInterceptors,
   UploadedFile,
-  ParseFilePipe,
-  MaxFileSizeValidator,
-  FileTypeValidator,
+  ParseFilePipeBuilder,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -25,37 +23,69 @@ import { ImagesService } from './images.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ImageEntity } from './entities/image.entity';
 import { UpdateImageDto } from './dto/update-image.dto';
+import { JpegValidator } from './image.validator';
 
 @Controller('images')
 @ApiTags('images')
 export class ImagesController {
   constructor(private readonly imagesService: ImagesService) {}
 
-  @Post('upload')
+  @Get('user')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOkResponse({ isArray: true })
+  findForPlayer(@Req() req: Request) {
+    return this.imagesService.findForUser(req.user['id']);
+  }
+
+  @Post('upload/checkin/:tournamentId')
   @UseInterceptors(FileInterceptor('file'))
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @ApiOkResponse({ type: ImageEntity })
-  uploadImage(
+  async uploadCheckinImage(
+    @Req() req: Request,
     @UploadedFile(
-      new ParseFilePipe({
-        validators: [
-          new MaxFileSizeValidator({ maxSize: 1000 * 1000 * 10 }),
-          new FileTypeValidator({ fileType: 'image/jpeg' }),
-        ],
-      })
+      new ParseFilePipeBuilder()
+        .addMaxSizeValidator({ maxSize: 1000 * 1000 * 10 })
+        .addFileTypeValidator({ fileType: 'image/jpeg' })
+        .addValidator(new JpegValidator({}))
+        .build({ fileIsRequired: true }),
     )
-    file: Express.Multer.File
+    file: Express.Multer.File,
+    @Param('tournamentId', ParseIntPipe) tournamentId: number,
   ) {
-    return this.imagesService.handleUpload(file);
+    return this.imagesService.handleUpload(
+      file,
+      req.user['id'],
+      tournamentId,
+      true,
+    );
   }
 
-  @Get('user')
+  @Post('upload/checkout/:tournamentId')
+  @UseInterceptors(FileInterceptor('file'))
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  @ApiOkResponse({ type: ImageEntity, isArray: true })
-  findForPlayer(@Req() req: Request) {
-    return this.imagesService.findForUser(req.user['id']);
+  @ApiOkResponse({ type: ImageEntity })
+  async uploadCheckoutImage(
+    @Req() req: Request,
+    @UploadedFile(
+      new ParseFilePipeBuilder()
+        .addMaxSizeValidator({ maxSize: 1000 * 1000 * 10 })
+        .addFileTypeValidator({ fileType: 'image/jpeg' })
+        .addValidator(new JpegValidator({}))
+        .build({ fileIsRequired: true }),
+    )
+    file: Express.Multer.File,
+    @Param('tournamentId', ParseIntPipe) tournamentId: number,
+  ) {
+    return this.imagesService.handleUpload(
+      file,
+      req.user['id'],
+      tournamentId,
+      false,
+    );
   }
 
   @Get(':id')
@@ -77,7 +107,7 @@ export class ImagesController {
   update(
     @Req() req: Request,
     @Param('id', ParseIntPipe) id: number,
-    @Body() updateImageDto: UpdateImageDto
+    @Body() updateImageDto: UpdateImageDto,
   ) {
     return this.imagesService.update(id, updateImageDto, req.user['id']);
   }
