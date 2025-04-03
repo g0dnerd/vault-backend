@@ -1,4 +1,4 @@
-import { ImageType, PrismaClient } from '@prisma/client';
+import { PrismaClient, Role } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { roundsOfHashing } from '../src/users/users.service';
 
@@ -50,6 +50,7 @@ async function main() {
     update: {
       password: user1Password,
       username: 'paul',
+      roles: [Role.PLAYER_ADMIN],
     },
     create: {
       username: 'testuser1',
@@ -63,6 +64,7 @@ async function main() {
     where: { email: 'I8O2h@example.com' },
     update: {
       password: user2Password,
+      roles: [Role.PLAYER_ADMIN],
     },
     create: {
       username: 'testuser2',
@@ -884,18 +886,6 @@ async function main() {
     },
   });
 
-  const image1 = await prisma.image.upsert({
-    where: {
-      url: 'foo.jpg',
-    },
-    update: {},
-    create: {
-      draftPlayerId: draftPlayer1.id,
-      url: 'foo.jpg',
-      imageType: ImageType.CHECKIN,
-    },
-  });
-
   console.log({ tournament1, tournament2, tournament3 });
   console.log({ phase1, phase2 });
   console.log({ cubeShivan, cubeMighty });
@@ -955,7 +945,6 @@ async function main() {
     draftPlayer15,
     draftPlayer16,
   });
-  console.log({ image1 });
 }
 
 main()
