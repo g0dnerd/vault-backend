@@ -248,6 +248,8 @@ export class ImagesService {
       }
     }
 
+    const client = this.minioService.getMinio();
+    await client.removeObject('user-upload', image.storagePath);
     await this.cacheManager.del(image.storagePath);
     return this.prisma.image.delete({ where: { id } });
   }
