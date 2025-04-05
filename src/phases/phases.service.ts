@@ -8,11 +8,11 @@ export class PhasesService {
   constructor(private prisma: PrismaService) {}
 
   async createWithoutPhaseIndex(data: Partial<CreatePhaseDto>) {
-    const { tournamentId, roundAmount } = data;
+    const { tournamentId, numRounds } = data;
 
     let createPhaseDto: CreatePhaseDto = {
       tournamentId,
-      roundAmount,
+      numRounds,
       phaseIndex: 0,
     };
 
@@ -51,7 +51,7 @@ export class PhasesService {
       },
       select: {
         id: true,
-        roundAmount: true,
+        numRounds: true,
         phaseIndex: true,
         tournament: {
           select: {

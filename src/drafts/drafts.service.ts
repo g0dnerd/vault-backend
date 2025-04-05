@@ -28,7 +28,7 @@ export class DraftsService {
         phase: {
           select: {
             tournamentId: true,
-            roundAmount: true,
+            numRounds: true,
           },
         },
       },
@@ -56,7 +56,7 @@ export class DraftsService {
         phase: {
           select: {
             tournamentId: true,
-            roundAmount: true,
+            numRounds: true,
           },
         },
       },
@@ -85,7 +85,7 @@ export class DraftsService {
         phase: {
           select: {
             tournamentId: true,
-            roundAmount: true,
+            numRounds: true,
           },
         },
       },
@@ -125,7 +125,7 @@ export class DraftsService {
         phase: {
           select: {
             tournamentId: true,
-            roundAmount: true,
+            numRounds: true,
           },
         },
       },
@@ -147,6 +147,7 @@ export class DraftsService {
         },
       },
       select: {
+        id: true,
         draft: {
           include: {
             players: {
@@ -168,14 +169,44 @@ export class DraftsService {
             phase: {
               select: {
                 tournamentId: true,
-                roundAmount: true,
+                numRounds: true,
               },
             },
           },
         },
       },
     });
-    return draftPlayer.draft;
+
+    const matches = await this.prisma.match.findMany({
+      where: {
+        OR: [{ player1Id: draftPlayer.id }, { player2Id: draftPlayer.id }],
+      },
+      select: {
+        round: {
+          select: {
+            roundIndex: true,
+            draft: { select: { phase: { select: { numRounds: true } } } },
+          },
+        },
+        resultConfirmed: true,
+      },
+    });
+
+    let draft = draftPlayer.draft;
+    let checkinNeeded = false;
+    let checkoutNeeded = false;
+
+    if (draft.seated) {
+      checkinNeeded = true;
+      if (matches.length === draft.phase.numRounds) {
+        if (matches.at(-1).resultConfirmed) {
+          checkinNeeded = true;
+          checkoutNeeded = true;
+        }
+      }
+    }
+
+    return { ...draft, checkinNeeded, checkoutNeeded };
   }
 
   async makeSeatings(draftId: number) {
@@ -224,7 +255,7 @@ export class DraftsService {
         phase: {
           select: {
             tournamentId: true,
-            roundAmount: true,
+            numRounds: true,
           },
         },
       },
