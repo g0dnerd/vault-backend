@@ -94,16 +94,35 @@ export class ImagesService {
     const phaseIdx = player.draft.phase.phaseIndex;
     const username = player.enrollment.user.username.toLowerCase();
     const checkInStr = checkin ? 'checkin' : 'checkout';
+    const timestamp = new Date().toISOString();
+
+    const filename = `${username}-phase${phaseIdx}-${cube}-${checkInStr}-${timestamp}.jpg`;
 
     // Define image metadata
     const metaData = {
       'Content-Type': file.mimetype,
-      'X-Amz-Meta-Timestamp': new Date().toISOString(),
+      'X-Amz-Meta-Timestamp': timestamp,
       'X-Amz-Meta-Imagetype': `${checkInStr}`,
       'X-Amz-Meta-Cube': `${cube}`,
     };
 
-    const filename = `${username}-phase${phaseIdx}-${cube}-${checkInStr}.jpg`;
+    const imageType: ImageType = checkin
+      ? ImageType.CHECKIN
+      : ImageType.CHECKOUT;
+
+    // Create the `Image` database object
+    try {
+      await this.prisma.image.create({
+        data: {
+          draftPlayerId: player.id,
+          storagePath: filename,
+          imageType,
+        },
+      });
+    } catch (error) {
+      console.error('MinIO error:', error);
+      throw new MinioError();
+    }
 
     // Try to upload the image to S3 storage
     try {
@@ -116,21 +135,9 @@ export class ImagesService {
       );
     } catch (error) {
       console.error('MinIO error:', error);
+      await this.prisma.image.delete({ where: { storagePath: filename } });
       throw new MinioError();
     }
-
-    const imageType: ImageType = checkin
-      ? ImageType.CHECKIN
-      : ImageType.CHECKOUT;
-
-    // Create the `Image` database object
-    await this.prisma.image.create({
-      data: {
-        draftPlayerId: player.id,
-        storagePath: filename,
-        imageType,
-      },
-    });
 
     try {
       const url = await client.presignedGetObject(
@@ -141,6 +148,18 @@ export class ImagesService {
       // Set the URL into cache for 24 hrs
       await this.cacheManager.set(filename, url, this.minioUrlTTL * 1000);
 
+      if (checkin && !player.checkedIn) {
+        await this.prisma.draftPlayer.update({
+          where: { id: player.id },
+          data: { checkedIn: true },
+        });
+      }
+      if (!checkin && !player.checkedOut) {
+        await this.prisma.draftPlayer.update({
+          where: { id: player.id },
+          data: { checkedOut: true },
+        });
+      }
       return { url };
     } catch (error) {
       console.error('MinIO error:', error);
