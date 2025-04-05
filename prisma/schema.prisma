@@ -90,7 +90,7 @@ model Phase {
   tournament   Tournament @relation(fields: [tournamentId], references: [id])
   tournamentId Int
   phaseIndex   Int
-  roundAmount  Int        @default(3)
+  numRounds    Int        @default(3) @map("roundAmount")
   started      Boolean    @default(false)
   finished     Boolean    @default(false)
   drafts       Draft[]

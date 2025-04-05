@@ -12,7 +12,7 @@ export class PhaseEntity implements Phase {
   phaseIndex: number;
 
   @ApiProperty()
-  roundAmount: number;
+  numRounds: number;
 
   @ApiProperty()
   started: boolean;

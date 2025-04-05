@@ -16,7 +16,7 @@ export class CreatePhaseDto {
   @IsPositive()
   @IsOptional()
   @ApiProperty({ required: false, default: 3 })
-  roundAmount: number;
+  numRounds: number;
 
   @IsBoolean()
   @IsOptional()

@@ -117,6 +117,11 @@ export class MatchesService {
             },
           },
         },
+        round: {
+          select: {
+            roundIndex: true,
+          },
+        },
       },
     });
     if (!game) {
@@ -327,7 +332,7 @@ export class MatchesService {
       where: { id: draftId },
       include: {
         phase: {
-          select: { roundAmount: true },
+          select: { numRounds: true },
         },
       },
     });
