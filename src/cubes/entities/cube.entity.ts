@@ -11,18 +11,18 @@ export class CubeEntity implements Cube {
   @ApiProperty()
   name: string;
 
-  @ApiProperty()
-  cardNumber: number;
+  @ApiProperty({ required: false, nullable: true })
+  numCards: number | null;
 
   @ApiProperty({ required: false, nullable: true })
-  description: string | null;
-
-  @ApiProperty({ required: false, nullable: true })
-  longDescription: string | null;
-
-  @ApiProperty({ required: false, nullable: true })
-  imageUrl: string | null;
+  shortDescription: string | null;
 
   @ApiProperty()
-  url: string;
+  longDescription: string;
+
+  @ApiProperty({ required: false, nullable: true })
+  imageStoragePath: string | null;
+
+  @ApiProperty()
+  cobraUrl: string;
 }

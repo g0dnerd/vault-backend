@@ -17,6 +17,7 @@ import { TournamentsModule } from '../tournaments/tournaments.module';
 import { UsersModule } from '../users/users.module';
 import { MatchGateway } from '../matches/matches.gateway';
 import { MatchesService } from '../matches/matches.service';
+import { MemoryStoredFile, NestjsFormDataModule } from 'nestjs-form-data';
 
 @Module({
   imports: [
@@ -24,6 +25,12 @@ import { MatchesService } from '../matches/matches.service';
     ConfigModule.forRoot({
       isGlobal: true,
       ignoreEnvFile: true,
+    }),
+    NestjsFormDataModule.config({
+      cleanupAfterFailedHandle: true,
+      cleanupAfterSuccessHandle: true,
+      storage: MemoryStoredFile,
+      isGlobal: true,
     }),
     PrismaModule,
     AuthModule,
