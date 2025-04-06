@@ -10,6 +10,8 @@ import {
   ParseIntPipe,
   NotFoundException,
   UseGuards,
+  Req,
+  ValidationPipe,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -19,12 +21,14 @@ import {
 } from '@nestjs/swagger';
 
 import { CubesService } from './cubes.service';
-import { CreateCubeDto } from './dto/create-cube.dto';
+import { CubeWithFileDto } from './dto/create-cube.dto';
 import { UpdateCubeDto } from './dto/update-cube.dto';
 import { CubeEntity } from './entities/cube.entity';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../roles-guard/roles.guard';
 import { Roles } from '../roles-guard/roles.decorator';
+import { Request } from 'express';
+import { FormDataRequest } from 'nestjs-form-data';
 
 @Controller('cubes')
 @ApiTags('cubes')
@@ -32,12 +36,16 @@ export class CubesController {
   constructor(private readonly cubesService: CubesService) {}
 
   @Post()
+  @FormDataRequest()
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(['ADMIN'])
+  @Roles(['ADMIN', 'PLAYER_ADMIN'])
   @ApiCreatedResponse({ type: CubeEntity })
-  create(@Body() createCubeDto: CreateCubeDto) {
-    return this.cubesService.create(createCubeDto);
+  create(
+    @Req() req: Request,
+    @Body(new ValidationPipe()) createCubeDto: CubeWithFileDto,
+  ) {
+    return this.cubesService.create(createCubeDto, req.user['id']);
   }
 
   @Get()
