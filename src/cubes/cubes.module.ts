@@ -40,7 +40,7 @@ import { NestMinioModule } from 'nestjs-minio';
         // otherwise, get S3 data from environment variables and connect to the bucket
         endPoint: configService.get<string>('S3_ENDPOINT'),
         port: parseInt(configService.get<string>('S3_PORT'), 10),
-        useSSL: true,
+        useSSL: configService.get<boolean>('S3_USE_SSL'),
         accessKey: configService.get<string>('S3_ACCESS_KEY'),
         secretKey: configService.get<string>('S3_SECRET_KEY'),
       }),
