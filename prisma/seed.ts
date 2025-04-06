@@ -5,8 +5,6 @@ import { roundsOfHashing } from '../src/users/users.service';
 const prisma = new PrismaClient();
 
 async function main() {
-  await prisma.match.deleteMany();
-
   const tournament1 = await prisma.tournament.upsert({
     where: { name: 'Test Tournament 1' },
     update: {
@@ -430,55 +428,59 @@ async function main() {
     },
   });
 
-  const cubeShivan = await prisma.cube.upsert({
-    where: {
-      name: 'Shivan',
-    },
-    update: {
-      name: 'Shivan',
-      description: 'Powered Vintage Cube',
-      longDescription:
-        "It's a Dragon alright! It's old, powerful and a little mean. This Cube started with the ambition to make Shivan Dragon and Old Man of the Sea playable cards. It turned into an (mostly) old bordered vintage cube, which hits a lot of the classic notes of the game. Fast mana and enablers are often broken but the payoffs are way worse than modern cards. Aggro, Midrange and Control are all viable strategies as well as some more synergistic themes like Madness, Reanimator, Enchantress, Artifacts or Stax for example. These themes span over multiple colors and are not restricted to certain color pairs (although some are more obvious). Fixing is amped up a little as Shock- and Fetchlands are included as well as ABU Duals and Painlands. Note that land destruction is also supported so build your manabases with care.",
-      cardNumber: 450,
-      creatorId: user1.id,
-      url: 'https://cubecobra.com/cube/overview/shivan',
-      imageUrl: 'cubes/shivan.jpg',
-    },
-    create: {
-      name: 'Shivan',
-      cardNumber: 450,
-      description: 'Vintage Cube',
-      longDescription:
-        "It's a Dragon alright! It's old, powerful and a little mean. This Cube started with the ambition to make Shivan Dragon and Old Man of the Sea playable cards. It turned into an (mostly) old bordered vintage cube, which hits a lot of the classic notes of the game. Fast mana and enablers are often broken but the payoffs are way worse than modern cards. Aggro, Midrange and Control are all viable strategies as well as some more synergistic themes like Madness, Reanimator, Enchantress, Artifacts or Stax for example. These themes span over multiple colors and are not restricted to certain color pairs (although some are more obvious). Fixing is amped up a little as Shock- and Fetchlands are included as well as ABU Duals and Painlands. Note that land destruction is also supported so build your manabases with care.",
-      creatorId: user1.id,
-      url: 'https://cubecobra.com/cube/overview/shivan',
-      imageUrl: 'cubes/shivan.jpg',
-    },
-  });
+  // const cubeShivan = await prisma.cube.upsert({
+  //   where: {
+  //     name: 'Shivan',
+  //   },
+  //   update: {
+  //     name: 'Shivan',
+  //     shortDescription: 'Powered Vintage Cube',
+  //     longDescription:
+  //       "It's a Dragon alright! It's old, powerful and a little mean. This Cube started with the ambition to make Shivan Dragon and Old Man of the Sea playable cards. It turned into an (mostly) old bordered vintage cube, which hits a lot of the classic notes of the game. Fast mana and enablers are often broken but the payoffs are way worse than modern cards. Aggro, Midrange and Control are all viable strategies as well as some more synergistic themes like Madness, Reanimator, Enchantress, Artifacts or Stax for example. These themes span over multiple colors and are not restricted to certain color pairs (although some are more obvious). Fixing is amped up a little as Shock- and Fetchlands are included as well as ABU Duals and Painlands. Note that land destruction is also supported so build your manabases with care.",
+  //     numCards: 450,
+  //     creatorId: user1.id,
+  //     cobraUrl: 'https://cubecobra.com/cube/overview/shivan',
+  //   },
+  //   create: {
+  //     name: 'Shivan',
+  //     numCards: 450,
+  //     shortDescription: 'Vintage Cube',
+  //     longDescription:
+  //       "It's a Dragon alright! It's old, powerful and a little mean. This Cube started with the ambition to make Shivan Dragon and Old Man of the Sea playable cards. It turned into an (mostly) old bordered vintage cube, which hits a lot of the classic notes of the game. Fast mana and enablers are often broken but the payoffs are way worse than modern cards. Aggro, Midrange and Control are all viable strategies as well as some more synergistic themes like Madness, Reanimator, Enchantress, Artifacts or Stax for example. These themes span over multiple colors and are not restricted to certain color pairs (although some are more obvious). Fixing is amped up a little as Shock- and Fetchlands are included as well as ABU Duals and Painlands. Note that land destruction is also supported so build your manabases with care.",
+  //     creatorId: user1.id,
+  //     cobraUrl: 'https://cubecobra.com/cube/overview/shivan',
+  //   },
+  // });
 
-  const cubeMighty = await prisma.cube.upsert({
-    where: {
-      name: 'The Mighty Cube',
-    },
-    update: {
-      name: 'The Mighty Cube',
-      description: 'Dragon brr',
-      longDescription:
-        'A fully powered Vintage cube. Get ahead with fast mana, take the Initiative, or straight up combo kill your opponents. No holding back with this cube.',
-      creatorId: user2.id,
-      url: 'https://cubecobra.com/cube/overview/the_mighty_cube',
-      imageUrl: 'cubes/mighty.jpg',
-    },
-    create: {
-      name: 'The Mighty Cube',
-      cardNumber: 360,
-      description: 'Dragon brr',
-      longDescription:
-        'A fully powered Vintage cube. Get ahead with fast mana, take the Initiative, or straight up combo kill your opponents. No holding back with this cube.',
-      creatorId: user2.id,
-      url: 'https://cubecobra.com/cube/overview/the_mighty_cube',
-      imageUrl: 'cubes/mighty.jpg',
-    },
+  // const cubeMighty = await prisma.cube.upsert({
+  //   where: {
+  //     name: 'The Mighty Cube',
+  //   },
+  //   update: {
+  //     name: 'The Mighty Cube',
+  //     shortDescription: 'Dragon brrrr',
+  //     longDescription:
+  //       'A fully powered Vintage cube. Get ahead with fast mana, take the Initiative, or straight up combo kill your opponents. No holding back with this cube.',
+  //     creatorId: user2.id,
+  //     cobraUrl: 'https://cubecobra.com/cube/overview/the_mighty_cube',
+  //     numCards: 360,
+  //   },
+  //   create: {
+  //     name: 'The Mighty Cube',
+  //     numCards: 360,
+  //     shortDescription: 'Dragon brrrr',
+  //     longDescription:
+  //       'A fully powered Vintage cube. Get ahead with fast mana, take the Initiative, or straight up combo kill your opponents. No holding back with this cube.',
+  //     creatorId: user2.id,
+  //     cobraUrl: 'https://cubecobra.com/cube/overview/the_mighty_cube',
+  //   },
+  // });
+
+  const cubeShivan = await prisma.cube.findUniqueOrThrow({
+    where: { name: 'Shivan' },
+  });
+  const cubeMighty = await prisma.cube.findUniqueOrThrow({
+    where: { name: 'The Mighty Cube' },
   });
 
   const draft1 = await prisma.draft.upsert({

@@ -68,7 +68,7 @@ export class CubeWithFileDto {
   @IsString()
   @IsNotEmpty()
   @MinLength(10)
-  @MaxLength(40)
+  @MaxLength(90)
   shortDescription?: string;
 
   @IsString()

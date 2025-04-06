@@ -22,13 +22,16 @@ export class CubesService {
     const client = this.minioService.getMinio();
 
     const { thumbnail, ...data } = createCubeDto;
-    const timestamp = new Date().toISOString();
-    const filename = `${data.name}-thumbnail-${timestamp}.jpg`;
+    const datestamp = new Date().toDateString();
+    const timestamp = new Date().toTimeString();
+    const name = data.name.replace(/ /g, '').toLowerCase();
+    const filename = `${name}-thumbnail.jpg`;
 
     const metaData = {
       'Content-Type': thumbnail.mimetype,
+      'X-Amz-Meta-Date': datestamp,
       'X-Amz-Meta-Timestamp': timestamp,
-      'X-Amz-Meta-Cube-Name': `${data.name}`,
+      'X-Amz-Meta-Cube-Name': `${name}`,
     };
 
     // Try to upload the image to S3 storage
@@ -145,6 +148,7 @@ export class CubesService {
             cube.imageStoragePath,
             this.minioUrlTTL,
           );
+
           await this.cacheManager.set(
             cube.imageStoragePath,
             url,
