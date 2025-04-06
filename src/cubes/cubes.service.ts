@@ -138,8 +138,16 @@ export class CubesService {
 
     const urls = await Promise.all(
       cubes.map(async (cube) => {
+        console.log(
+          'Mapping cube ' +
+            cube.name +
+            ' with storagePath ' +
+            cube.imageStoragePath,
+        );
         // Check the cache for a valid URL
         let url = await this.cacheManager.get<string>(cube.imageStoragePath);
+
+        console.log('Found url', url);
 
         // On cache miss, query the URL from MinIO and set it into cache.
         if (!url) {
