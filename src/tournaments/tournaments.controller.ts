@@ -8,7 +8,6 @@ import {
   Param,
   Delete,
   ParseIntPipe,
-  NotFoundException,
   UseGuards,
   Req,
 } from '@nestjs/common';
@@ -53,7 +52,7 @@ export class TournamentsController {
   @UseGuards(JwtAuthGuard)
   @ApiOkResponse({ type: TournamentEntity, isArray: true })
   async findEnrolled(@Req() req: Request) {
-    return this.tournamentsService.findByUser(req.user['id']);
+    return this.tournamentsService.findEnrolled(req.user['id']);
   }
 
   @Get('enrolled-leagues')
@@ -70,19 +69,6 @@ export class TournamentsController {
   @ApiOkResponse({ type: TournamentEntity, isArray: true })
   async findAvailable(@Req() req: Request) {
     return this.tournamentsService.findAvailableForUser(req.user['id']);
-  }
-
-  @Get(':id')
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(['ADMIN'])
-  @ApiOkResponse({ type: TournamentEntity })
-  async findOne(@Param('id', ParseIntPipe) id: number) {
-    const tournament = await this.tournamentsService.findOne(id);
-    if (!tournament) {
-      throw new NotFoundException(`Tournament with ID ${id} does not exist.`);
-    }
-    return tournament;
   }
 
   @Patch(':id')

@@ -1,13 +1,18 @@
 import { CreateUserDto } from './dto/create-user.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
+import { User } from '@prisma/client';
 
 export const roundsOfHashing = 10;
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+    private prisma: PrismaService,
+  ) {}
 
   async create(createUserDto: CreateUserDto) {
     const hashedPassword = await bcrypt.hash(
@@ -20,8 +25,8 @@ export class UsersService {
     return this.prisma.user.create({ data: createUserDto });
   }
 
-  findOne(id: number) {
-    return this.prisma.user.findUnique({ where: { id } });
+  async findOne(id: number) {
+    return this.prisma.user.findUnique({ where: { id }, select: { id: true } });
   }
 
   async update(
@@ -39,11 +44,19 @@ export class UsersService {
   }
 
   async getRoles(userId: number) {
+    const fromCache = await this.cacheManager.get<User>(`user-${userId}`);
+
+    if (fromCache) {
+      return fromCache;
+    }
+
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { roles: true },
     });
-    return user.roles;
+    this.cacheManager.set(`$user-${userId}`, user, 5000);
+
+    return user;
   }
 
   async getProfile(userId: number) {
@@ -51,6 +64,7 @@ export class UsersService {
       where: { id: userId },
       select: { username: true, email: true, profilePicture: true, bio: true },
     });
+
     const tournaments = await this.prisma.tournament.findMany({
       where: {
         enrollments: {
@@ -59,12 +73,16 @@ export class UsersService {
           },
         },
       },
+      select: { id: true },
     });
+
     const cubes = await this.prisma.cube.findMany({
       where: {
         creatorId: userId,
       },
+      select: { id: true },
     });
+
     const numTournaments = tournaments.length;
     const numCubes = cubes.length;
     return { ...user, numTournaments, numCubes };
