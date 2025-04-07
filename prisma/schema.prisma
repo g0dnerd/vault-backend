@@ -109,6 +109,8 @@ model Cube {
   imageStoragePath String? @map("imageUrl")
   cobraUrl         String  @unique @map("url")
   drafts           Draft[]
+
+  @@index([creatorId])
 }
 
 model Draft {
