@@ -7,6 +7,7 @@ import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { MinioError } from 'src/images/storage.error';
 import { Cube } from '@prisma/client';
 import { DuplicateCubeException } from './cubes.exception';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class CubesService {
@@ -14,6 +15,7 @@ export class CubesService {
 
   constructor(
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+    private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
     private readonly minioService: NestMinioService,
   ) {}
@@ -145,9 +147,9 @@ export class CubesService {
             cube.imageStoragePath,
         );
         // Check the cache for a valid URL
-        let url = await this.cacheManager.get<string>(cube.imageStoragePath);
+        let url = undefined; //await this.cacheManager.get<string>(cube.imageStoragePath);
 
-        console.log('Found url', url);
+        // console.log('Found url', url);
 
         // On cache miss, query the URL from MinIO and set it into cache.
         if (!url) {
@@ -155,6 +157,11 @@ export class CubesService {
             'user-upload',
             cube.imageStoragePath,
             this.minioUrlTTL,
+          );
+
+          url = url.replace(
+            this.configService.get<string>('S3_ENDPOINT'),
+            this.configService.get<string>('S3_PUBLIC_ENDPOINT'),
           );
 
           await this.cacheManager.set(
