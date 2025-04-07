@@ -43,13 +43,6 @@ export class AuthController {
     return this.authService.register(email, password, username);
   }
 
-  @Get('status')
-  @UseGuards(JwtAuthGuard)
-  @ApiOkResponse()
-  status() {
-    return this.authService.status();
-  }
-
   @Get('refresh')
   @UseGuards(JwtAuthGuard)
   @ApiOkResponse({ type: AuthEntity })

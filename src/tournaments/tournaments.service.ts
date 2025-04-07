@@ -17,22 +17,36 @@ export class TournamentsService {
       where: { id: userId },
       select: { roles: true },
     });
+
     if (
       user.roles.includes(Role.PLAYER_ADMIN) ||
       user.roles.includes(Role.ADMIN)
     ) {
       return this.prisma.tournament.findMany();
     }
+
     return this.prisma.tournament.findMany({
       where: { public: true },
     });
   }
 
-  findOne(id: number) {
-    return this.prisma.tournament.findUnique({ where: { id } });
-  }
+  async findEnrolled(userId: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { roles: true },
+    });
 
-  findByUser(userId: number) {
+    if (
+      user.roles.includes(Role.PLAYER_ADMIN) ||
+      user.roles.includes(Role.ADMIN)
+    ) {
+      return this.prisma.tournament.findMany({
+        select: {
+          id: true,
+        },
+      });
+    }
+
     return this.prisma.tournament.findMany({
       where: {
         enrollments: {
@@ -41,24 +55,40 @@ export class TournamentsService {
           },
         },
       },
-    });
-  }
-
-  async findLeaguesByUser(userId: number) {
-    const enrollments = await this.prisma.enrollment.findMany({
-      where: { userId: userId },
-    });
-    return this.prisma.tournament.findMany({
-      where: {
-        id: {
-          in: enrollments.map((enrollment) => enrollment.tournamentId),
-        },
-        isLeague: true,
+      select: {
+        id: true,
       },
     });
   }
 
-  findAvailableForUser(userId: number) {
+  async findLeaguesByUser(userId: number) {
+    return this.prisma.tournament.findMany({
+      where: {
+        enrollments: {
+          some: {
+            userId,
+          },
+        },
+        isLeague: true,
+      },
+      select: {
+        id: true,
+      },
+    });
+  }
+
+  async findAvailableForUser(userId: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { roles: true },
+    });
+    if (
+      user.roles.includes(Role.PLAYER_ADMIN) ||
+      user.roles.includes(Role.ADMIN)
+    ) {
+      return [];
+    }
+
     return this.prisma.tournament.findMany({
       where: {
         public: true,
@@ -67,6 +97,9 @@ export class TournamentsService {
             userId,
           },
         },
+      },
+      select: {
+        id: true,
       },
     });
   }

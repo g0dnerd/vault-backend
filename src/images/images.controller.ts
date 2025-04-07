@@ -1,7 +1,6 @@
 import { Request } from 'express';
 import 'multer';
 import {
-  Body,
   Controller,
   Get,
   NotFoundException,
@@ -9,7 +8,6 @@ import {
   Param,
   Post,
   UseGuards,
-  Patch,
   Delete,
   Req,
   UseInterceptors,
@@ -22,7 +20,6 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ImagesService } from './images.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ImageEntity } from './entities/image.entity';
-import { UpdateImageDto } from './dto/update-image.dto';
 import { JpegValidator } from './image.validator';
 
 @Controller('images')
@@ -98,18 +95,6 @@ export class ImagesController {
       throw new NotFoundException(`Image with ID ${id} does not exist.`);
     }
     return image;
-  }
-
-  @Patch(':id')
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
-  @ApiOkResponse({ type: ImageEntity })
-  update(
-    @Req() req: Request,
-    @Param('id', ParseIntPipe) id: number,
-    @Body() updateImageDto: UpdateImageDto,
-  ) {
-    return this.imagesService.update(id, updateImageDto, req.user['id']);
   }
 
   @Delete(':id')

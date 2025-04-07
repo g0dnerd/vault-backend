@@ -9,7 +9,6 @@ import { NestMinioService } from 'nestjs-minio';
 import { Image, ImageType } from '@prisma/client';
 
 import { CreateImageDto } from './dto/create-image.dto';
-import { UpdateImageDto } from './dto/update-image.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { Role } from '../roles-guard/role.enum';
 import { MinioError } from './storage.error';
@@ -31,7 +30,11 @@ export class ImagesService {
   }
 
   async findAll(userId: number) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { roles: true },
+    });
+
     if (!user.roles.includes(Role.Admin)) {
       const images = await this.prisma.image.findMany({
         where: {
@@ -41,11 +44,20 @@ export class ImagesService {
             },
           },
         },
+        select: {
+          storagePath: true,
+          id: true,
+        },
       });
       return this.mapUrlsToImages(images);
     }
 
-    const images = await this.prisma.image.findMany();
+    const images = await this.prisma.image.findMany({
+      select: {
+        storagePath: true,
+        id: true,
+      },
+    });
     return this.mapUrlsToImages(images);
   }
 
@@ -149,13 +161,13 @@ export class ImagesService {
       await this.cacheManager.set(filename, url, this.minioUrlTTL * 1000);
 
       if (checkin && !player.checkedIn) {
-        await this.prisma.draftPlayer.update({
+        this.prisma.draftPlayer.update({
           where: { id: player.id },
           data: { checkedIn: true },
         });
       }
       if (!checkin && !player.checkedOut) {
-        await this.prisma.draftPlayer.update({
+        this.prisma.draftPlayer.update({
           where: { id: player.id },
           data: { checkedOut: true },
         });
@@ -176,6 +188,10 @@ export class ImagesService {
           },
         },
       },
+      select: {
+        storagePath: true,
+        id: true,
+      },
     });
 
     if (!images) {
@@ -187,66 +203,51 @@ export class ImagesService {
   }
 
   async findOne(id: number, userId: number) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { roles: true },
+    });
 
-    if (!user.roles.includes(Role.Admin)) {
-      const image = await this.prisma.image.findUnique({
-        where: { id },
-        include: {
-          draftPlayer: {
-            select: {
-              enrollment: {
-                select: {
-                  userId: true,
-                },
+    let image = await this.prisma.image.findUnique({
+      where: { id },
+      select: {
+        draftPlayer: {
+          select: {
+            enrollment: {
+              select: {
+                userId: true,
               },
             },
           },
         },
-      });
+        id: true,
+        storagePath: true,
+      },
+    });
+
+    if (!user.roles.includes(Role.Admin)) {
       if (image.draftPlayer.enrollment.userId !== userId) {
         throw new UnauthorizedException(
           'User is not authorized to view this image',
         );
       }
     }
-    return this.prisma.image.findUnique({ where: { id } });
-  }
 
-  async update(id: number, updateImageDto: UpdateImageDto, userId: number) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
-
-    if (!user.roles.includes(Role.Admin)) {
-      const image = await this.prisma.image.findUnique({
-        where: { id },
-        include: {
-          draftPlayer: {
-            select: {
-              enrollment: {
-                select: {
-                  userId: true,
-                },
-              },
-            },
-          },
-        },
-      });
-      if (image.draftPlayer.enrollment.userId !== userId) {
-        throw new UnauthorizedException(
-          'User is not authorized to update this image',
-        );
-      }
-    }
-
-    return this.prisma.image.update({ where: { id }, data: updateImageDto });
+    return this.mapUrlsToImages([
+      { id: image.id, storagePath: image.storagePath },
+    ]);
   }
 
   async remove(id: number, userId: number) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { roles: true },
+    });
 
     const image = await this.prisma.image.findUnique({
       where: { id },
-      include: {
+      select: {
+        storagePath: true,
         draftPlayer: {
           select: {
             enrollment: {
@@ -268,15 +269,16 @@ export class ImagesService {
     }
 
     const client = this.minioService.getMinio();
-    await client.removeObject('user-upload', image.storagePath);
-    await this.cacheManager.del(image.storagePath);
+    client.removeObject('user-upload', image.storagePath);
+    this.cacheManager.del(image.storagePath);
+
     return this.prisma.image.delete({ where: { id } });
   }
 
   // Gets the pre-signed URL for each image object.
   // Attempts to get these from cache first and queries them from MinIO on cache miss.
   private async mapUrlsToImages(
-    images: Image[],
+    images: Partial<Image>[],
   ): Promise<{ id: number; url: string }[]> {
     const client = this.minioService.getMinio();
 

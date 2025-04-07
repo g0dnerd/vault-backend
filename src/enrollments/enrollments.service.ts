@@ -26,7 +26,11 @@ export class EnrollmentsService {
   async create(createEnrollmentDto: CreateEnrollmentDto) {
     const tournament = await this.prisma.tournament.findUnique({
       where: { id: createEnrollmentDto.tournamentId },
+      select: {
+        isLeague: true,
+      },
     });
+
     if (tournament.isLeague) {
       createEnrollmentDto = {
         elo: 1500,
@@ -36,7 +40,6 @@ export class EnrollmentsService {
 
     return this.prisma.enrollment.create({
       data: createEnrollmentDto,
-      include: { tournament: true },
     });
   }
 
@@ -58,18 +61,17 @@ export class EnrollmentsService {
     return this.prisma.enrollment.createManyAndReturn({
       data: enrollments,
       skipDuplicates: true,
+      select: { user: { select: { username: true } }, id: true },
     });
   }
 
   findAll() {
-    return this.prisma.enrollment.findMany();
-  }
-
-  findOne(id: number) {
-    return this.prisma.enrollment.findUnique({
-      where: { id },
-      include: {
-        tournament: true,
+    return this.prisma.enrollment.findMany({
+      select: {
+        user: { select: { username: true } },
+        id: true,
+        elo: true,
+        tournamentId: true,
       },
     });
   }
@@ -83,20 +85,6 @@ export class EnrollmentsService {
 
   remove(id: number) {
     return this.prisma.enrollment.delete({ where: { id } });
-  }
-
-  findByTournament(tournamentId: number) {
-    return this.prisma.enrollment.findMany({
-      where: { tournamentId },
-      select: {
-        id: true,
-        user: {
-          select: {
-            username: true,
-          },
-        },
-      },
-    });
   }
 
   findByDraft(draftId: number) {
@@ -128,7 +116,11 @@ export class EnrollmentsService {
           { player2: { draft: { phase: { tournamentId } } } },
         ],
       },
-      include: {
+      select: {
+        player1Wins: true,
+        player2Wins: true,
+        player1Id: true,
+        player2Id: true,
         player1: {
           select: { enrollmentId: true },
         },
@@ -144,9 +136,11 @@ export class EnrollmentsService {
     if (!games) {
       throw new NotFoundException();
     }
+
     const enrollments = await this.prisma.enrollment.findMany({
       where: { tournamentId },
-      include: {
+      select: {
+        id: true,
         user: {
           select: { username: true },
         },
@@ -170,6 +164,7 @@ export class EnrollmentsService {
         pmw: 0.0,
         pgw: 0.0,
       };
+
       for (const game of games) {
         if (enrollment.id === game.player1.enrollmentId) {
           scorecard.opponentIds.push(game.player2.enrollmentId);
@@ -261,34 +256,20 @@ export class EnrollmentsService {
     return scorecards;
   }
 
-  findAllLeagueEnrollments() {
-    return this.prisma.enrollment.findMany({
-      where: { tournament: { isLeague: true } },
-      include: {
-        user: {
-          select: {
-            username: true,
-          },
-        },
-      },
-      orderBy: {
-        elo: 'desc',
-      },
-    });
-  }
-
   async findByUser(userId: number) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
+      select: { roles: true },
     });
+
     if (
       !user.roles.includes(Role.ADMIN) &&
       !user.roles.includes(Role.PLAYER_ADMIN)
     ) {
       return this.prisma.enrollment.findMany({
         where: { userId },
-        include: {
-          tournament: true,
+        select: {
+          tournament: { select: { id: true } },
           user: {
             select: {
               username: true,
@@ -298,22 +279,13 @@ export class EnrollmentsService {
       });
     }
     return this.prisma.enrollment.findMany({
-      include: {
-        tournament: true,
+      select: {
+        tournament: { select: { id: true } },
         user: {
           select: {
             username: true,
           },
         },
-      },
-    });
-  }
-
-  findByUserAndTournament(userId: number, tournamentId: number) {
-    return this.prisma.enrollment.findFirstOrThrow({
-      where: {
-        userId,
-        tournamentId,
       },
     });
   }

@@ -214,7 +214,9 @@ export class DraftsService {
       where: {
         draftId,
       },
+      select: { id: true },
     });
+
     const numPlayers = players.length;
 
     if (numPlayers <= 0) {
@@ -223,7 +225,7 @@ export class DraftsService {
 
     shuffleArray(players);
     for (const [idx, player] of players.entries()) {
-      await this.prisma.draftPlayer.update({
+      this.prisma.draftPlayer.update({
         where: {
           id: player.id,
         },

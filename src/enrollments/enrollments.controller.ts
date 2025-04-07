@@ -7,7 +7,6 @@ import {
   Param,
   Delete,
   ParseIntPipe,
-  NotFoundException,
   UseGuards,
   Req,
 } from '@nestjs/common';
@@ -48,14 +47,6 @@ export class EnrollmentsController {
     return this.enrollmentsService.findByUser(req.user['id']);
   }
 
-  @Get('league')
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
-  @ApiOkResponse({ type: EnrollmentEntity, isArray: true })
-  findAllLeagueEnrollments() {
-    return this.enrollmentsService.findAllLeagueEnrollments();
-  }
-
   @Post('enroll-many')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
@@ -64,28 +55,6 @@ export class EnrollmentsController {
     @Body() createEnrollmentDto: { tournamentId: number; userIds: number[] },
   ) {
     return this.enrollmentsService.enrollMany(createEnrollmentDto);
-  }
-
-  @Get(':id')
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(['ADMIN'])
-  @ApiOkResponse({ type: EnrollmentEntity })
-  async findOne(@Param('id', ParseIntPipe) id: number) {
-    const enrollment = await this.enrollmentsService.findOne(id);
-    if (!enrollment) {
-      throw new NotFoundException(`Enrollment with ID ${id} does not exist.`);
-    }
-    return enrollment;
-  }
-
-  @Get('tournament/:tournamentId')
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(['ADMIN', 'PLAYER_ADMIN'])
-  @ApiOkResponse({ type: EnrollmentEntity, isArray: true })
-  findForTournament(@Param('tournamentId', ParseIntPipe) tournamentId: number) {
-    return this.enrollmentsService.findByTournament(tournamentId);
   }
 
   @Get('draft/:draftId')

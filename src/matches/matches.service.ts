@@ -98,6 +98,11 @@ export class MatchesService {
           },
         ],
       },
+      omit: {
+        roundId: true,
+        player1Id: true,
+        player2Id: true,
+      },
       include: {
         player1: {
           select: {
@@ -124,13 +129,19 @@ export class MatchesService {
         },
       },
     });
+
     if (!game) {
       return {
         ...game,
         opponentName: '',
       };
     }
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { username: true },
+    });
+
     const p1Name = game.player1.enrollment.user.username;
     const p2Name = game.player2.enrollment.user.username;
     const opponentName = user.username == p1Name ? p2Name : p1Name;
@@ -185,7 +196,9 @@ export class MatchesService {
       );
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
+        select: { roles: true },
       });
+
       // If the user is not a player in the game, they need to be
       // an admin to be authorized to update the match
       if (
@@ -222,7 +235,7 @@ export class MatchesService {
     // is authorized to change this match
     const g = await this.prisma.match.findUnique({
       where: { id: matchId },
-      include: {
+      select: {
         player1: {
           select: {
             enrollment: { select: { id: true, userId: true, elo: true } },
@@ -244,6 +257,7 @@ export class MatchesService {
     ) {
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
+        select: { roles: true },
       });
       if (!user.roles.includes(Role.ADMIN)) {
         throw new ForbiddenException(
@@ -257,7 +271,13 @@ export class MatchesService {
       include: {
         round: {
           select: {
-            draft: { select: { phase: { select: { tournament: true } } } },
+            draft: {
+              select: {
+                phase: {
+                  select: { tournament: { select: { isLeague: true } } },
+                },
+              },
+            },
           },
         },
       },
@@ -299,7 +319,7 @@ export class MatchesService {
         p2EloNew = p2Elo - eloGain / 2;
       }
 
-      await this.prisma.enrollment.update({
+      this.prisma.enrollment.update({
         where: {
           id: g.player1.enrollment.id,
         },
@@ -307,7 +327,8 @@ export class MatchesService {
           elo: p1EloNew,
         },
       });
-      await this.prisma.enrollment.update({
+
+      this.prisma.enrollment.update({
         where: {
           id: g.player2.enrollment.id,
         },
@@ -315,6 +336,7 @@ export class MatchesService {
           elo: p2EloNew,
         },
       });
+
       this.matchGateway.handleMatchUpdate(game);
       return game;
     }
@@ -330,7 +352,8 @@ export class MatchesService {
   async pairRound(draftId: number) {
     const draft = await this.prisma.draft.findUnique({
       where: { id: draftId },
-      include: {
+      select: {
+        tableFirst: true,
         phase: {
           select: { numRounds: true },
         },
@@ -342,6 +365,9 @@ export class MatchesService {
       where: {
         draftId,
         started: false,
+      },
+      select: {
+        id: true,
       },
       orderBy: {
         roundIndex: 'asc',
@@ -469,10 +495,11 @@ export class MatchesService {
       }
     }
 
-    await this.prisma.round.update({
+    this.prisma.round.update({
       where: { id: currentRound.id },
       data: { started: true },
     });
+
     return matches;
   }
 
@@ -481,15 +508,24 @@ export class MatchesService {
       where: {
         OR: [{ player1: { draftId } }, { player2: { draftId } }],
       },
+      select: {
+        player1Id: true,
+        player2Id: true,
+        player1Wins: true,
+        player2Wins: true,
+      },
       orderBy: {
         round: { roundIndex: 'desc' },
       },
     });
+
     const players = await this.prisma.draftPlayer.findMany({
       where: {
         draftId,
       },
+      select: { id: true },
     });
+
     let scores = [];
     for (const p of players) {
       const player = await this.prisma.draftPlayer.update({
@@ -499,6 +535,7 @@ export class MatchesService {
         data: {
           bye: false,
         },
+        select: { id: true },
       });
       let points = 0;
       let opponentIds = [];
@@ -593,18 +630,14 @@ export class MatchesService {
       if (row < nodes.length && col < nodes.length) {
         const player1 = nodes[row];
         const player2 = nodes[col];
-        console.log('Looking at p1 ', player1, ' and p2 ', player2);
         if (
           graph.edge(player1, player2) &&
           !pairedPlayers.has(player1) &&
           !pairedPlayers.has(player2)
         ) {
-          console.log('Pairing them.');
           pairings[player1] = player2;
           pairedPlayers.add(player1);
           pairedPlayers.add(player2);
-        } else {
-          console.log('Not pairing them.');
         }
       }
     }
@@ -641,18 +674,7 @@ export class MatchesService {
 
     return await this.prisma.match.create({
       data,
-      include: {
-        player1: {
-          select: {
-            enrollment: { select: { user: { select: { username: true } } } },
-          },
-        },
-        player2: {
-          select: {
-            enrollment: { select: { user: { select: { username: true } } } },
-          },
-        },
-      },
+      select: { id: true },
     });
   }
 
@@ -665,6 +687,7 @@ export class MatchesService {
         hadBye: true,
         bye: true,
       },
+      select: { id: true },
     });
   }
 }

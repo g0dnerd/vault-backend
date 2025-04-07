@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -16,6 +17,7 @@ import {
   InvalidCredentialsException,
   TraditionalLoginWithOauthException,
 } from './auth.exception';
+import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 
 const GOOGLE_LOGIN_ERRORS = {
   CLIENT_ID_MISMATCH: 'Client ID mismatch',
@@ -29,6 +31,7 @@ const GOOGLE_LOGIN_ERRORS = {
 @Injectable()
 export class AuthService {
   constructor(
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
@@ -37,6 +40,12 @@ export class AuthService {
   async login(email: string, password: string): Promise<AuthEntity> {
     const user = await this.prisma.user.findUnique({
       where: { email },
+      select: {
+        isSocialLogin: true,
+        password: true,
+        roles: true,
+        id: true,
+      },
     });
 
     if (!user) {
@@ -66,14 +75,12 @@ export class AuthService {
   ): Promise<AuthEntity> {
     const hashedPassword = await bcrypt.hash(password, roundsOfHashing);
 
-    const userByEmail = await this.prisma.user.findUnique({ where: { email } });
+    const userByEmail = await this.prisma.user.exists({ email });
     if (userByEmail) {
       throw new DuplicateEmailException();
     }
 
-    const userByUsername = await this.prisma.user.findUnique({
-      where: { username },
-    });
+    const userByUsername = await this.prisma.user.exists({ username });
     if (userByUsername) {
       throw new DuplicateUsernameException();
     }
@@ -84,21 +91,26 @@ export class AuthService {
         password: hashedPassword,
         username,
       },
+      select: {
+        id: true,
+        roles: true,
+      },
     });
+
     return {
       token: this.jwtService.sign({ userId: user.id }),
       roles: user.roles,
     };
   }
 
-  status() {
-    return true;
-  }
-
   async refresh(id: number) {
-    const user = await this.prisma.user.findUnique({ where: { id } });
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: { id: true, roles: true },
+    });
 
     if (!user) {
+      this.cacheManager.del(`user-${id}`);
       throw new UnauthorizedException();
     }
 
@@ -123,6 +135,10 @@ export class AuthService {
   private async findOrCreateSocialUser(email: string) {
     let user = await this.prisma.user.findUnique({
       where: { email },
+      select: {
+        id: true,
+        roles: true,
+      },
     });
 
     // If there is no user with these social credentials yet, create one.
@@ -132,6 +148,10 @@ export class AuthService {
           email,
           username: email,
           isSocialLogin: true,
+        },
+        select: {
+          id: true,
+          roles: true,
         },
       });
     }

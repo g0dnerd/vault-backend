@@ -1,4 +1,4 @@
-import { CacheKey, CacheTTL } from '@nestjs/cache-manager';
+import { CacheInterceptor, CacheKey, CacheTTL } from '@nestjs/cache-manager';
 import {
   Controller,
   Get,
@@ -12,6 +12,7 @@ import {
   UseGuards,
   Req,
   ValidationPipe,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -49,6 +50,7 @@ export class CubesController {
   }
 
   @Get()
+  @UseInterceptors(CacheInterceptor)
   @CacheKey('cubes')
   @CacheTTL(60000)
   @ApiBearerAuth()
