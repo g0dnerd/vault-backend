@@ -3,7 +3,6 @@ import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { Inject, Injectable } from '@nestjs/common';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
-import { User } from '@prisma/client';
 
 export const roundsOfHashing = 10;
 
@@ -26,7 +25,10 @@ export class UsersService {
   }
 
   async findOne(id: number) {
-    return this.prisma.user.findUnique({ where: { id }, select: { id: true } });
+    return this.prisma.user.findUnique({
+      where: { id },
+      select: { id: true, roles: true },
+    });
   }
 
   async update(
@@ -44,18 +46,17 @@ export class UsersService {
   }
 
   async getRoles(userId: number) {
-    const fromCache = await this.cacheManager.get<User>(`user-${userId}`);
+    const cacheKey = `user-${userId}`;
+    const fromCache = await this.cacheManager.get(cacheKey);
 
-    if (fromCache) {
-      return fromCache;
-    }
+    if (fromCache) return fromCache;
 
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { roles: true },
     });
-    this.cacheManager.set(`$user-${userId}`, user, 5000);
 
+    this.cacheManager.set(cacheKey, user, 5000);
     return user;
   }
 
