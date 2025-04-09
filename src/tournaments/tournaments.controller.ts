@@ -10,6 +10,7 @@ import {
   ParseIntPipe,
   UseGuards,
   Req,
+  Inject,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -25,11 +26,15 @@ import { UpdateTournamentDto } from './dto/update-tournament.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../roles-guard/roles.decorator';
 import { RolesGuard } from '../roles-guard/roles.guard';
+import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 
 @Controller('tournaments')
 @ApiTags('tournaments')
 export class TournamentsController {
-  constructor(private readonly tournamentsService: TournamentsService) {}
+  constructor(
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+    private readonly tournamentsService: TournamentsService,
+  ) {}
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -43,8 +48,14 @@ export class TournamentsController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @ApiOkResponse({ type: TournamentEntity, isArray: true })
-  findAll(@Req() req: Request) {
-    return this.tournamentsService.findAll(req.user['id']);
+  async findAll(@Req() req: Request) {
+    const cacheKey = `user-tournaments-${req.user['id']}`;
+    const fromCache = await this.cacheManager.get(cacheKey);
+    if (fromCache) return fromCache;
+
+    const tournaments = await this.tournamentsService.findAll(req.user['id']);
+    this.cacheManager.set(cacheKey, tournaments, 5000);
+    return tournaments;
   }
 
   @Get('enrolled')
@@ -52,7 +63,15 @@ export class TournamentsController {
   @UseGuards(JwtAuthGuard)
   @ApiOkResponse({ type: TournamentEntity, isArray: true })
   async findEnrolled(@Req() req: Request) {
-    return this.tournamentsService.findEnrolled(req.user['id']);
+    const cacheKey = `enrolled-tournaments-${req.user['id']}`;
+    const fromCache = await this.cacheManager.get(cacheKey);
+    if (fromCache) return fromCache;
+
+    const tournaments = await this.tournamentsService.findEnrolled(
+      req.user['id'],
+    );
+    this.cacheManager.set(cacheKey, tournaments, 5000);
+    return tournaments;
   }
 
   @Get('enrolled-leagues')

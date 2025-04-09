@@ -1,3 +1,4 @@
+import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import {
   Controller,
   Get,
@@ -11,6 +12,7 @@ import {
   UseGuards,
   Req,
   InternalServerErrorException,
+  Inject,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -31,7 +33,10 @@ import { RolesGuard } from '../roles-guard/roles.guard';
 @Controller('drafts')
 @ApiTags('drafts')
 export class DraftsController {
-  constructor(private readonly draftsService: DraftsService) {}
+  constructor(
+    private readonly draftsService: DraftsService,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+  ) {}
 
   @Post()
   @ApiBearerAuth()
@@ -50,11 +55,16 @@ export class DraftsController {
     @Req() req: Request,
     @Param('tournamentId', ParseIntPipe) tournamentId: number,
   ) {
+    const cacheKey = `current-draft-${req.user['id']}`;
+    const fromCache = await this.cacheManager.get(cacheKey);
+    if (fromCache) return fromCache;
+
     const currentDraft = await this.draftsService
       .getCurrentDraft(req.user['id'], tournamentId)
       .catch(() => {
         throw new NotFoundException('No draft found for current user');
       });
+    this.cacheManager.set(cacheKey, currentDraft, 5000);
     return currentDraft;
   }
 

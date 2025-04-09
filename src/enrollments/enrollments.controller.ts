@@ -25,6 +25,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Request } from 'express';
 import { Roles } from '../roles-guard/roles.decorator';
 import { RolesGuard } from '../roles-guard/roles.guard';
+import { CacheTTL } from '@nestjs/cache-manager';
 
 @Controller('enrollments')
 @ApiTags('enrollments')
@@ -40,6 +41,7 @@ export class EnrollmentsController {
   }
 
   @Get()
+  @CacheTTL(3000)
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @ApiOkResponse({ type: EnrollmentEntity, isArray: true })

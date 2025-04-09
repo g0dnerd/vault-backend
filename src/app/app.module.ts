@@ -26,8 +26,10 @@ import { redisStore } from 'cache-manager-redis-store';
     // globally provide `ConfigService` for environment variables
     ConfigModule.forRoot({
       isGlobal: true,
-      ignoreEnvFile: true,
+      // FIXME: why does this sometimes also work with this set to true?
+      ignoreEnvFile: false,
     }),
+
     NestjsFormDataModule.config({
       cleanupAfterFailedHandle: true,
       cleanupAfterSuccessHandle: true,

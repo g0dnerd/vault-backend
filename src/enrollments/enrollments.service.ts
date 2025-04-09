@@ -275,6 +275,8 @@ export class EnrollmentsService {
               username: true,
             },
           },
+          id: true,
+          tournamentId: true,
         },
       });
     }
@@ -286,6 +288,8 @@ export class EnrollmentsService {
             username: true,
           },
         },
+        id: true,
+        tournamentId: true,
       },
     });
   }

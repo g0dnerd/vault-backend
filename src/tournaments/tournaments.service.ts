@@ -22,11 +22,12 @@ export class TournamentsService {
       user.roles.includes(Role.PLAYER_ADMIN) ||
       user.roles.includes(Role.ADMIN)
     ) {
-      return this.prisma.tournament.findMany();
+      return this.prisma.tournament.findMany({ take: 10 });
     }
 
     return this.prisma.tournament.findMany({
       where: { public: true },
+      take: 10,
     });
   }
 

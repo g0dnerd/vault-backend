@@ -149,7 +149,11 @@ export class DraftsService {
       select: {
         id: true,
         draft: {
-          include: {
+          select: {
+            seated: true,
+            id: true,
+            started: true,
+            finished: true,
             players: {
               select: {
                 enrollment: {
@@ -157,7 +161,6 @@ export class DraftsService {
                 },
                 seat: true,
                 bye: true,
-                hadBye: true,
               },
             },
             cube: {
