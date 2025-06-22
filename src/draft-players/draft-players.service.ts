@@ -7,7 +7,7 @@ export class DraftPlayersService {
 
   findAll() {
     return this.prisma.draftPlayer.findMany({
-      select: { id: true, draftId: true },
+      select: { id: true, draftId: true, enrollmentId: true },
     });
   }
 
