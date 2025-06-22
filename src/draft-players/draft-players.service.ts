@@ -6,7 +6,9 @@ export class DraftPlayersService {
   constructor(private prisma: PrismaService) {}
 
   findAll() {
-    return this.prisma.draftPlayer.findMany({ select: { id: true } });
+    return this.prisma.draftPlayer.findMany({
+      select: { id: true, draftId: true },
+    });
   }
 
   getPoolStatus(tournamentId: number, userId: number) {
